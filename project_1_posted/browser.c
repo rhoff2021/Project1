@@ -52,7 +52,10 @@ void init_blacklist (char *fname);
  */
 // NO-OP for now
 void new_tab_created_cb(GtkButton *button, gpointer data)
-{}
+{
+  
+
+}
  
 /* === PROVIDED CODE === */
 /*
@@ -168,6 +171,8 @@ int main(int argc, char **argv)
     fprintf (stderr, "browser <blacklist_file>\n");
     exit (0);
   }
+
+  printf("Hello, world!\n");
 
   return 0;
 }
