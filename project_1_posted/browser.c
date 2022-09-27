@@ -52,7 +52,9 @@ void init_blacklist (char *fname);
  */
 // NO-OP for now
 void new_tab_created_cb(GtkButton *button, gpointer data)
-{}
+{
+
+}
  
 /* === PROVIDED CODE === */
 /*
@@ -167,6 +169,20 @@ int main(int argc, char **argv)
   if (argc != 2) {
     fprintf (stderr, "browser <blacklist_file>\n");
     exit (0);
+  }
+  int status;
+  pid_t child_process = fork()
+  if(child_process == -1) { // child
+    perror("fork() failed")
+    exit()
+  } else if (child_process == 0) {
+      run_control();
+      kill(1)
+  }
+  
+  
+  else {
+    wait(&status); // parent
   }
 
   return 0;
