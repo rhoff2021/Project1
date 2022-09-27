@@ -1,5 +1,5 @@
 /* CSCI-4061 Fall 2022
- * Group Member #1: <name> <x500>
+ * Group Member #1: <Rebecca> <Hoff>
  * Group Member #2: <name> <x500>
  * Group Member #3: Ji Moua moua0345
  */
