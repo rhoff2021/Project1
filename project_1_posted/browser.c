@@ -32,6 +32,9 @@ void init_blacklist (char *fname);
 /* === STUDENTS IMPLEMENT=== */
 // HINT: What globals might you want to declare?
 
+char blacklist[MAX_BAD][MAX_URL];   // blacklist array; not sure if making it a 2D array is
+                                      // the way to go - Ji
+
 /* === PROVIDED CODE === */
 /*
  * Name:		          new_tab_created_cb
@@ -52,9 +55,7 @@ void init_blacklist (char *fname);
  */
 // NO-OP for now
 void new_tab_created_cb(GtkButton *button, gpointer data)
-{
-
-}
+{}
  
 /* === PROVIDED CODE === */
 /*
@@ -89,6 +90,9 @@ int run_control()
 */ 
 int on_blacklist (char *uri) {
   //STUDENTS IMPLEMENT
+  
+  // thinking about putting a for loop here - Ji
+
   return 0;
 }
 
@@ -103,6 +107,13 @@ int on_blacklist (char *uri) {
 */
 int bad_format (char *uri) {
   //STUDENTS IMPLEMENT
+  const char format1[8] = 'http://';      // const chars for strstr compare
+  const char format2[9] = 'https://';
+
+  if (strstr(uri, format1) == NULL || strstr(uri, format2) == NULL) {
+    return 1;
+  }
+
   return 0;
 }
 
@@ -147,6 +158,18 @@ void uri_entered_cb(GtkWidget* entry, gpointer data)
 */
 void init_blacklist (char *fname) {
   //STUDENTS IMPLEMENT
+  FILE *fp = fopen(fname, 'r');     // file i/o stuff
+
+  if (ferror(fp)) {
+    printf("Error with fopen(). Cannot create blacklist.\n");     // check if fopen succeeded
+  } else {
+    if (fgets()) {          // fgets stuff; i don't really get so i'm gonna look it up later - Ji
+
+
+    }
+  }
+
+  fclose(fp);
   return;
 }
 
@@ -170,6 +193,7 @@ int main(int argc, char **argv)
     fprintf (stderr, "browser <blacklist_file>\n");
     exit (0);
   }
+
   int status;
   pid_t child_process = fork();
   if(child_process == -1) { // child
@@ -178,10 +202,7 @@ int main(int argc, char **argv)
   } else if (child_process == 0) {
       run_control();
       kill(child_process, 1);
-  }
-  
-  
-  else {
+  } else {
     wait(&status); // parent
   }
 
