@@ -171,13 +171,13 @@ int main(int argc, char **argv)
     exit (0);
   }
   int status;
-  pid_t child_process = fork()
+  pid_t child_process = fork();
   if(child_process == -1) { // child
-    perror("fork() failed")
-    exit()
+    perror("fork() failed");
+    exit(1);
   } else if (child_process == 0) {
       run_control();
-      kill(1)
+      kill(child_process, 1);
   }
   
   
