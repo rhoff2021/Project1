@@ -107,14 +107,14 @@ int on_blacklist (char *uri) {
 */
 int bad_format (char *uri) {
   //STUDENTS IMPLEMENT
-  const char format1[8] = 'http://';      // const chars for strstr compare
-  const char format2[9] = 'https://';
+  // const char format1[8] = 'http://';      // const chars for strstr compare
+  // const char format2[9] = 'https://';
 
-  if (strstr(uri, format1) == NULL || strstr(uri, format2) == NULL) {
-    return 1;
-  }
+  // if (strstr(uri, format1) == NULL || strstr(uri, format2) == NULL) {
+  //   return 1;
+  // }
 
-  return 0;
+  // return 0;
 }
 
 /* === STUDENTS IMPLEMENT=== */
@@ -144,6 +144,20 @@ int bad_format (char *uri) {
 void uri_entered_cb(GtkWidget* entry, gpointer data)
 {
   //STUDENTS IMPLEMENT
+  char *uri = get_entered_uri(entry);
+  browser_window *b_window = NULL;
+  // create_browser(URL_RENDERING_TAB, 1, G_CALLBACK(new_tab_created_cb), G_CALLBACK(uri_entered_cb), &b_window);
+  pid_t pid = fork();
+  int status;
+  if(pid == -1){
+    exit(1);
+  } else if (pid == 0) {
+    printf("the URL is: %s \n", get_entered_uri(entry));
+    render_web_page_in_tab(uri, b_window);
+  } else {
+    create_labeled_tab(data);
+    wait(&status);
+  }
   return;
 }
 
@@ -158,19 +172,19 @@ void uri_entered_cb(GtkWidget* entry, gpointer data)
 */
 void init_blacklist (char *fname) {
   //STUDENTS IMPLEMENT
-  FILE *fp = fopen(fname, 'r');     // file i/o stuff
+  // FILE *fp = fopen(fname, 'r');     // file i/o stuff
 
-  if (ferror(fp)) {
-    printf("Error with fopen(). Cannot create blacklist.\n");     // check if fopen succeeded
-  } else {
-    if (fgets()) {          // fgets stuff; i don't really get so i'm gonna look it up later - Ji
+  // if (ferror(fp)) {
+  //   printf("Error with fopen(). Cannot create blacklist.\n");     // check if fopen succeeded
+  // } else {
+  //   if (fgets()) {          // fgets stuff; i don't really get so i'm gonna look it up later - Ji
 
 
-    }
-  }
+  //   }
+  // }
 
-  fclose(fp);
-  return;
+  // fclose(fp);
+  // return;
 }
 
 /* === STUDENTS IMPLEMENT=== */
