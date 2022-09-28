@@ -107,8 +107,8 @@ int on_blacklist (char *uri) {
 */
 int bad_format (char *uri) {
   //STUDENTS IMPLEMENT
-  const char format1[8] = 'http://';      // const chars for strstr compare
-  const char format2[9] = 'https://';
+  const char *format1 = "http://";      // const chars for strstr compare
+  const char *format2 = "https://";
 
   if (strstr(uri, format1) == NULL || strstr(uri, format2) == NULL) {
     return 1;
@@ -144,6 +144,29 @@ int bad_format (char *uri) {
 void uri_entered_cb(GtkWidget* entry, gpointer data)
 {
   //STUDENTS IMPLEMENT
+  
+  //printf("%s", get_entered_uri(entry));
+  /*
+  char *uri = get_entered_uri(entry);
+  
+  browser_window *b_window = NULL;
+  
+  //create_browser(URL_RENDERING_TAB, 1, G_CALLBACK(new_tab_created), G_CALLBACK(uri_entered_cb), &b_window);
+  create_browser(CONTROLLER_TAB, 0, G_CALLBACK(new_tab_created_cb), G_CALLBACK(uri_entered_cb), &b_window);
+  
+  pid_t pid = fork();
+  int status;
+  
+  if (pid == -1) {
+    exit(1);
+  } else if (pid == 0) {
+    printf("%s\n", uri);
+    render_web_page_in_tab(uri, &b_window);
+  } else {
+    wait(&status);
+  }
+  */
+  
   return;
 }
 
@@ -158,6 +181,7 @@ void uri_entered_cb(GtkWidget* entry, gpointer data)
 */
 void init_blacklist (char *fname) {
   //STUDENTS IMPLEMENT
+/*
   FILE *fp = fopen(fname, 'r');     // file i/o stuff
 
   if (ferror(fp)) {
@@ -170,6 +194,7 @@ void init_blacklist (char *fname) {
   }
 
   fclose(fp);
+*/
   return;
 }
 
@@ -193,17 +218,17 @@ int main(int argc, char **argv)
     fprintf (stderr, "browser <blacklist_file>\n");
     exit (0);
   }
-
+  
+  pid_t pid = fork();
   int status;
-  pid_t child_process = fork();
-  if(child_process == -1) { // child
-    perror("fork() failed");
+  
+  if (pid == -1) {
     exit(1);
-  } else if (child_process == 0) {
-      run_control();
-      kill(child_process, 1);
+  } else if (pid == 0) {
+    run_control();
+    kill(pid, 1);
   } else {
-    wait(&status); // parent
+    wait(&status);
   }
 
   return 0;
