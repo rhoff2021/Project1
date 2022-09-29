@@ -114,7 +114,7 @@ int bad_format (char *uri) {
   //   return 1;
   // }
 
-  // return 0;
+  return 0;
 }
 
 /* === STUDENTS IMPLEMENT=== */
