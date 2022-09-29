@@ -34,6 +34,7 @@ void init_blacklist (char *fname);
 
 char blacklist[MAX_BAD][MAX_URL];   // blacklist array; not sure if making it a 2D array is
                                       // the way to go - Ji
+int tab_count = 0;
 
 /* === PROVIDED CODE === */
 /*
@@ -146,7 +147,8 @@ void uri_entered_cb(GtkWidget* entry, gpointer data)
   //STUDENTS IMPLEMENT
   char *uri = get_entered_uri(entry);
   browser_window *b_window = NULL;
-  // create_browser(URL_RENDERING_TAB, 1, G_CALLBACK(new_tab_created_cb), G_CALLBACK(uri_entered_cb), &b_window);
+  create_browser(URL_RENDERING_TAB, tab_count, G_CALLBACK(new_tab_created_cb), G_CALLBACK(uri_entered_cb), &b_window);
+  tab_count = tab_count + 1;
   pid_t pid = fork();
   int status;
   if(pid == -1){
