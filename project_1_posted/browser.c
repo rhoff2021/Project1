@@ -144,15 +144,13 @@ int bad_format (char *uri) {
 void uri_entered_cb(GtkWidget* entry, gpointer data)
 {
   //STUDENTS IMPLEMENT
+
   
-  //printf("%s", get_entered_uri(entry));
-  /*
   char *uri = get_entered_uri(entry);
   
   browser_window *b_window = NULL;
   
-  //create_browser(URL_RENDERING_TAB, 1, G_CALLBACK(new_tab_created), G_CALLBACK(uri_entered_cb), &b_window);
-  create_browser(CONTROLLER_TAB, 0, G_CALLBACK(new_tab_created_cb), G_CALLBACK(uri_entered_cb), &b_window);
+  create_browser(URL_RENDERING_TAB, 1, G_CALLBACK(new_tab_created_cb), G_CALLBACK(uri_entered_cb), &b_window);
   
   pid_t pid = fork();
   int status;
@@ -161,11 +159,11 @@ void uri_entered_cb(GtkWidget* entry, gpointer data)
     exit(1);
   } else if (pid == 0) {
     printf("%s\n", uri);
-    render_web_page_in_tab(uri, &b_window);
+    render_web_page_in_tab(uri, b_window);
   } else {
+    //create_labeled_tab(data);
     wait(&status);
   }
-  */
   
   return;
 }
