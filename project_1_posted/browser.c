@@ -108,12 +108,12 @@ int on_blacklist (char *uri) {
 */
 int bad_format (char *uri) {
   //STUDENTS IMPLEMENT
-  // const char format1[8] = 'http://';      // const chars for strstr compare
-  // const char format2[9] = 'https://';
+  const char *format1 = "http://";      // const chars for strstr compare
+  const char *format2 = "https://";
 
-  // if (strstr(uri, format1) == NULL || strstr(uri, format2) == NULL) {
-  //   return 1;
-  // }
+  if (strstr(uri, format1) == NULL || strstr(uri, format2) == NULL) {
+    return 1;
+  }
 
   return 0;
 }
