@@ -178,7 +178,7 @@ void uri_entered_cb(GtkWidget* entry, gpointer data)
   		printf("The URL is: %s\n", get_entered_uri(entry));
 
   		create_browser(URL_RENDERING_TAB, tab_count, G_CALLBACK(new_tab_created_cb), G_CALLBACK(uri_entered_cb), &b_window);
-      			render_web_page_in_tab(uri, b_window);
+      render_web_page_in_tab(uri, b_window);
   		tab_count++;
   		/*
   		pid_t pid = fork();
