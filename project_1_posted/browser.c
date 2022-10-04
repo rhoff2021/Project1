@@ -94,7 +94,36 @@ int on_blacklist (char *uri) {
   //STUDENTS IMPLEMENT
   
   // thinking about putting a for loop here - Ji
+  // char* w_format = "www."
+  char uri_copy[MAX_URL];
+  strcat(uri, "\n");
+  strcpy(uri_copy, uri);
+  printf("Uri: %s", uri_copy);
+  for(int i = 0; i<MAX_BAD; i++){
+    char b_url[MAX_URL] = "www.";
+    char b_url_http[MAX_URL] = "http://";
+    char b_url_https[MAX_URL] = "https://";
 
+    if(strlen(blacklist[i]) == 0) {
+      return 0;
+    }
+    // printf("%d url is:%s-\n", i,blacklist[i]);
+    if(strstr(blacklist[i], "www.") == NULL){
+      strcat(b_url, blacklist[i]);
+    } else {
+      strcpy(b_url, blacklist[i]);
+    }
+    strcat(b_url_http, b_url);
+    strcat(b_url_https, b_url);
+    printf("-%s", b_url_http);
+    printf("-%s", b_url_https);
+    printf("%d\n%d\n",strcmp(uri_copy, b_url_http), strcmp(uri_copy, b_url_https));
+
+    if(strcmp(uri_copy, b_url_http) == 0 || strcmp(uri_copy, b_url_https) == 0) {
+      printf("url is on blacklist\n");
+      return 1;
+    }
+  }
   return 0;
 }
 
@@ -115,7 +144,6 @@ int bad_format (char *uri) {
   if (strstr(uri, format1) == NULL && strstr(uri, format2) == NULL) {
     return 1;
   }
-
   return 0;
 }
 
@@ -147,51 +175,38 @@ void uri_entered_cb(GtkWidget* entry, gpointer data)
 {
   //STUDENTS IMPLEMENT
   char *uri = get_entered_uri(entry);
-  browser_window *b_window = NULL;
   
-  if (strlen(uri) == 0) {
+  // first checks if there is a URL, then checks the format
+  // if format is good, it will check if its on blacklist
+  // if not it will check the # of tabs
+  if (strlen(uri) == 0) {                     
   	alert("NO URL.");
   } else if (bad_format(uri) == 1) {
   	alert("BAD FORMAT.");
-  } else {
-  	if (tab_count == MAX_URL) {
-  		alert("MAX TABS REACHED.");
-  	} else {
-  		printf("The URL is: %s\n", get_entered_uri(entry));
-  		
-  		tab_count++;
-  		/*
-  		pid_t pid = fork();
-  		int statue;
-  		if(pid == -1) {
-  			exit(1);
-  		} else if (pid == 0) {
-  			
-  		} else {
-  			wait(&status);
-  		}
-  		*/
-  		//create_browser(URL_RENDERING_TAB, tab_count, G_CALLBACK(new_tab_created_cb), G_CALLBACK(uri_entered_cb), &b_window);
-  		//printf("The URL is: %s \n", get_entered_uri(entry));
-    		//render_web_page_in_tab(uri, b_window);
-  	}
-  }
-  
-  /*
-  tab_count++;
-  	
-  pid_t pid = fork();
-  int status;
-  if(pid == -1){
-    	exit(1);
-  } else if (pid == 0) {
-    	printf("the URL is: %s \n", get_entered_uri(entry));
-    	render_web_page_in_tab(uri, b_window);
-  } else {
-    	wait(&status);
-  }
- */
-  
+  } else {  
+      init_blacklist("blacklist");
+      printf("initializes blacklist\n");                                
+      if(on_blacklist(uri) == 1){
+        printf("on blacklist\n");
+        alert("Url is blacklisted");
+      } else if(tab_count+1 == MAX_URL) {
+        	alert("MAX TABS REACHED.");
+      } else { // URL is valid and can be rendered
+          // render page
+          pid_t pid = fork();
+          int status;
+          browser_window *b_window = NULL;
+          render_web_page_in_tab(uri, b_window);
+          if(pid == -1){
+              exit(1);
+          } else if (pid == 0) {
+              printf("The Url is %s", uri);
+              render_web_page_in_tab(uri, b_window);
+          } else {
+              wait(&status);
+          }
+      }
+    }
   return;
 }
 
@@ -206,19 +221,23 @@ void uri_entered_cb(GtkWidget* entry, gpointer data)
 */
 void init_blacklist (char *fname) {
   //STUDENTS IMPLEMENT
-  // FILE *fp = fopen(fname, 'r');     // file i/o stuff
-
-  // if (ferror(fp)) {
-  //   printf("Error with fopen(). Cannot create blacklist.\n");     // check if fopen succeeded
-  // } else {
-  //   if (fgets()) {          // fgets stuff; i don't really get so i'm gonna look it up later - Ji
-
-
-  //   }
-  // }
-
-  // fclose(fp);
-  // return;
+  FILE* fp = fopen(fname, "r");     // file i/o stuff
+  char buf[MAX_URL];
+  int count = 0;
+  if (ferror(fp)) {
+    printf("Error with fopen(). Cannot create blacklist.\n");     // check if fopen succeeded
+  } else {
+    while(fgets(buf, MAX_URL, fp) != NULL ) {          // fgets stuff; i don't really get so i'm gonna look it up later - Ji
+      strcpy(blacklist[count], buf);
+      if(count == MAX_BAD){
+        break;
+      }
+      count++;
+    }
+    fclose(fp);
+  }
+  clearerr(fp);
+  return;
 }
 
 /* === STUDENTS IMPLEMENT=== */
