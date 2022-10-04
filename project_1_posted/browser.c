@@ -193,7 +193,6 @@ void uri_entered_cb(GtkWidget* entry, gpointer data)
           pid_t pid = fork();
           int status;
           browser_window *b_window = NULL;
-          render_web_page_in_tab(uri, b_window);
           if(pid == -1){
               exit(1);
           } else if (pid == 0) {
