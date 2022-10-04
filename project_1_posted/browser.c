@@ -32,8 +32,7 @@ void init_blacklist (char *fname);
 /* === STUDENTS IMPLEMENT=== */
 // HINT: What globals might you want to declare?
 
-char blacklist[MAX_BAD][MAX_URL];   // blacklist array; not sure if making it a 2D array is
-                                      // the way to go - Ji
+char *blacklist[MAX_BAD];
                                       
 int tab_count = 0;
 
@@ -92,8 +91,7 @@ int run_control()
 */ 
 int on_blacklist (char *uri) {
   //STUDENTS IMPLEMENT
-  
-  // thinking about putting a for loop here - Ji
+
   // char* w_format = "www."
     for(int i = 0; i<MAX_BAD; i++){
       char b_url[MAX_URL] = "www.";
@@ -178,7 +176,9 @@ void uri_entered_cb(GtkWidget* entry, gpointer data)
   		alert("MAX TABS REACHED.");
   	} else {
   		printf("The URL is: %s\n", get_entered_uri(entry));
-  		
+
+  		create_browser(URL_RENDERING_TAB, tab_count, G_CALLBACK(new_tab_created_cb), G_CALLBACK(uri_entered_cb), &b_window);
+      			render_web_page_in_tab(uri, b_window);
   		tab_count++;
   		/*
   		pid_t pid = fork();
@@ -234,8 +234,13 @@ void init_blacklist (char *fname) {
     printf("Error with fopen(). Cannot create blacklist.\n");     // check if fopen succeeded
 
   } else {
-    while(*fgets(buf, MAX_URL, fp) != EOF ) {          // fgets stuff; i don't really get so i'm gonna look it up later - Ji
-      *blacklist[count] = *buf;
+    while(fgets(buf, MAX_URL, fp) != NULL) {
+      //*blacklist[count] = *buf;
+      blacklist[count] = buf;
+      
+      printf("size of black list is: %ld\n", sizeof(blacklist));
+      printf("buf is: %s\n", buf);
+      
       if(count == MAX_BAD){
         break;
       }
@@ -268,6 +273,13 @@ int main(int argc, char **argv)
     fprintf (stderr, "browser <blacklist_file>\n");
     exit (0);
   }
+  
+  init_blacklist(argv[1]);
+  
+  for (int i = 0; i < 2; i++) {
+  	printf("in blacklist[%d] is: %s\n", i, blacklist[i]);
+  }
+  
 
   int status;
   pid_t child_process = fork();
