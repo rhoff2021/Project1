@@ -93,10 +93,25 @@ int on_blacklist (char *uri) {
   //STUDENTS IMPLEMENT
 
   char uri_copy[MAX_URL];
-  strcat(uri, "\n");
+  strcat(uri, "\n");      //Cannot do this because adding char to string without enough size
+
   strcpy(uri_copy, uri);
   printf("Uri: %s", uri_copy);
+
+  //Loop through number of bad url's in the blacklist file 
+
   for(int i = 0; i<MAX_BAD; i++){
+
+    //You want to compare URL's without "www." and without "https://" and without "http://"
+    // So if you have a url in blacklist file with "www." you can just remove "www."
+    //If you have a url passed in (uri) with http or https:// you can just remove "http://" 
+
+    //CHECK FOR http www https
+    char b_url[MAX_URL];
+    //input = "https://google.com"
+    sscanf(b_url, "https://%s", uri);
+    //output = "google.com"
+
     char b_url[MAX_URL] = "www.";
     char b_url_http[MAX_URL] = "http://";
     char b_url_https[MAX_URL] = "https://";
@@ -104,6 +119,7 @@ int on_blacklist (char *uri) {
     if(strlen(blacklist[i]) == 0) {
       return 0;
     }
+    
     // printf("%d url is:%s-\n", i,blacklist[i]);
     if(strstr(blacklist[i], "www.") == NULL){
       strcat(b_url, blacklist[i]);
