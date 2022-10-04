@@ -32,8 +32,7 @@ void init_blacklist (char *fname);
 /* === STUDENTS IMPLEMENT=== */
 // HINT: What globals might you want to declare?
 
-char blacklist[MAX_BAD][MAX_URL];   // blacklist array; not sure if making it a 2D array is
-                                      // the way to go - Ji
+char *blacklist[MAX_BAD];
                                       
 int tab_count = 0;
 
@@ -183,10 +182,6 @@ void uri_entered_cb(GtkWidget* entry, gpointer data)
   	alert("NO URL.");
   } else if (bad_format(uri) == 1) {
   	alert("BAD FORMAT.");
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> 27f76c1e7cd1b007945b5f5126178fefd70b6d26
   } else {  
       init_blacklist("blacklist");
       printf("initializes blacklist\n");                                
@@ -211,52 +206,6 @@ void uri_entered_cb(GtkWidget* entry, gpointer data)
           }
       }
     }
-<<<<<<< HEAD
-=======
-=======
-  } else {
-  	if (tab_count == MAX_URL) {
-  		alert("MAX TABS REACHED.");
-  	} else {
-  		printf("The URL is: %s\n", get_entered_uri(entry));
-
-  		create_browser(URL_RENDERING_TAB, tab_count, G_CALLBACK(new_tab_created_cb), G_CALLBACK(uri_entered_cb), &b_window);
-      render_web_page_in_tab(uri, b_window);
-  		tab_count++;
-  		/*
-  		pid_t pid = fork();
-  		int statue;
-  		if(pid == -1) {
-  			exit(1);
-  		} else if (pid == 0) {
-  			
-  		} else {
-  			wait(&status);
-  		}
-  		*/
-  		//create_browser(URL_RENDERING_TAB, tab_count, G_CALLBACK(new_tab_created_cb), G_CALLBACK(uri_entered_cb), &b_window);
-  		//printf("The URL is: %s \n", get_entered_uri(entry));
-    		//render_web_page_in_tab(uri, b_window);
-  	}
-  }
-  
-  /*
-  tab_count++;
-  	
-  pid_t pid = fork();
-  int status;
-  if(pid == -1){
-    	exit(1);
-  } else if (pid == 0) {
-    	printf("the URL is: %s \n", get_entered_uri(entry));
-    	render_web_page_in_tab(uri, b_window);
-  } else {
-    	wait(&status);
-  }
- */
-  
->>>>>>> 9d0192d6be6169272e9993f896aed67867c0f858
->>>>>>> 27f76c1e7cd1b007945b5f5126178fefd70b6d26
   return;
 }
 
@@ -277,14 +226,6 @@ void init_blacklist (char *fname) {
   if (ferror(fp)) {
     printf("Error with fopen(). Cannot create blacklist.\n");     // check if fopen succeeded
   } else {
-<<<<<<< HEAD
-    while(fgets(buf, MAX_URL, fp) != NULL ) {          // fgets stuff; i don't really get so i'm gonna look it up later - Ji
-      strcpy(blacklist[count], buf);
-=======
-<<<<<<< HEAD
-    while(fgets(buf, MAX_URL, fp) != NULL ) {          // fgets stuff; i don't really get so i'm gonna look it up later - Ji
-      strcpy(blacklist[count], buf);
-=======
     while(fgets(buf, MAX_URL, fp) != NULL) {
       //*blacklist[count] = *buf;
       blacklist[count] = buf;
@@ -292,8 +233,6 @@ void init_blacklist (char *fname) {
       printf("size of black list is: %ld\n", sizeof(blacklist));
       printf("buf is: %s\n", buf);
       
->>>>>>> 9d0192d6be6169272e9993f896aed67867c0f858
->>>>>>> 27f76c1e7cd1b007945b5f5126178fefd70b6d26
       if(count == MAX_BAD){
         break;
       }
