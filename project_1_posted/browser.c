@@ -93,8 +93,22 @@ int run_control()
 int on_blacklist (char *uri) {
   //STUDENTS IMPLEMENT
   
-  // thinking about putting a for loop here - Ji
-  // char* w_format = "www."
+  for (int i = 0; i < MAX_BAD; i++) {
+    b_url[MAX_URL];
+
+    sscanf(b_url, "https://%s", uri);
+    //sscanf(b_url,"http://%s", b_url);
+
+    if (strlen(blacklist[i]) == 0) {
+      return 0;
+    }
+
+  
+
+  }
+  
+  
+  /*
   char uri_copy[MAX_URL];
   strcat(uri, "\n");
   strcpy(uri_copy, uri);
@@ -117,13 +131,14 @@ int on_blacklist (char *uri) {
     strcat(b_url_https, b_url);
     printf("-%s", b_url_http);
     printf("-%s", b_url_https);
-    printf("%d\n%d\n",strcmp(uri_copy, b_url_http), strcmp(uri_copy, b_url_https));
+    printf("%d\n%d\n",strcmp("a","a"), strcmp(uri_copy, b_url_https));
 
-    if(strcmp(uri_copy, b_url_http) == 0 || strcmp(uri_copy, b_url_https) == 0) {
+    if(strcmp(uri_copy, b_url_http) == 0 && strcmp(uri_copy, b_url_https) == 0) {
       printf("url is on blacklist\n");
       return 1;
     }
   }
+  */
   return 0;
 }
 
@@ -196,12 +211,15 @@ void uri_entered_cb(GtkWidget* entry, gpointer data)
           pid_t pid = fork();
           int status;
           browser_window *b_window = NULL;
-          render_web_page_in_tab(uri, b_window);
           if(pid == -1){
               exit(1);
           } else if (pid == 0) {
               printf("The Url is %s", uri);
+
+              create_browser(URL_RENDERING_TAB, tab_count, G_CALLBACK(new_tab_created_cb),
+		            G_CALLBACK(uri_entered_cb), &b_window);
               render_web_page_in_tab(uri, b_window);
+              tab_count++;
           } else {
               wait(&status);
           }
