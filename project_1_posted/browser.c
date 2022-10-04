@@ -91,7 +91,6 @@ int run_control()
 */ 
 int on_blacklist (char *uri) {
   //STUDENTS IMPLEMENT
-<<<<<<< HEAD
 
   char uri_copy[MAX_URL];
   strcat(uri, "\n");
@@ -102,20 +101,6 @@ int on_blacklist (char *uri) {
     char b_url_http[MAX_URL] = "http://";
     char b_url_https[MAX_URL] = "https://";
 
-=======
-  
-  // thinking about putting a for loop here - Ji
-  // char* w_format = "www."
-  char uri_copy[MAX_URL];
-  strcat(uri, "\n");
-  strcpy(uri_copy, uri);
-  printf("Uri: %s", uri_copy);
-  for(int i = 0; i<MAX_BAD; i++){
-    char b_url[MAX_URL] = "www.";
-    char b_url_http[MAX_URL] = "http://";
-    char b_url_https[MAX_URL] = "https://";
-
->>>>>>> 180a35912e6059795f204e26bb02b0ed8474bd1c
     if(strlen(blacklist[i]) == 0) {
       return 0;
     }
@@ -208,10 +193,6 @@ void uri_entered_cb(GtkWidget* entry, gpointer data)
           pid_t pid = fork();
           int status;
           browser_window *b_window = NULL;
-<<<<<<< HEAD
-=======
-          render_web_page_in_tab(uri, b_window);
->>>>>>> 180a35912e6059795f204e26bb02b0ed8474bd1c
           if(pid == -1){
               exit(1);
           } else if (pid == 0) {
