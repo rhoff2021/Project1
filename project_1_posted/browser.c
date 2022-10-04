@@ -32,7 +32,8 @@ void init_blacklist (char *fname);
 /* === STUDENTS IMPLEMENT=== */
 // HINT: What globals might you want to declare?
 
-char *blacklist[MAX_BAD];
+char blacklist[MAX_BAD][MAX_URL];   // blacklist array; not sure if making it a 2D array is
+                                      // the way to go - Ji
                                       
 int tab_count = 0;
 
@@ -239,9 +240,6 @@ void init_blacklist (char *fname) {
   return;
 }
 
-
-
-
 /* === STUDENTS IMPLEMENT=== */
 /* 
     Function: main 
@@ -262,13 +260,6 @@ int main(int argc, char **argv)
     fprintf (stderr, "browser <blacklist_file>\n");
     exit (0);
   }
-  
-  init_blacklist(argv[1]);
-  
-  for (int i = 0; i < 2; i++) {
-  	printf("in blacklist[%d] is: %s\n", i, blacklist[i]);
-  }
-  
 
   int status;
   pid_t child_process = fork();
