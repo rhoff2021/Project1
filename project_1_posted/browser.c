@@ -93,7 +93,28 @@ int on_blacklist (char *uri) {
   //STUDENTS IMPLEMENT
   
   // thinking about putting a for loop here - Ji
+  // char* w_format = "www."
+    for(int i = 0; i<MAX_BAD; i++){
+      char b_url[MAX_URL] = "www.";
+      char b_url_http[MAX_URL] = "http://";
+      char b_url_https[MAX_URL] = "https://";
 
+      if(blacklist[i] == NULL) {
+        return 0;
+      }
+
+      if(strstr(blacklist[i], "www.") == NULL){
+        strcat(b_url, blacklist[i]);
+      } else {
+        strcpy(b_url, blacklist[i]);
+      }
+      strcat(b_url_http, b_url);
+      strcat(b_url_https, b_url);
+
+      if(uri == b_url_http || uri == b_url_https) {
+        return 1;
+      }
+    }
   return 0;
 }
 
@@ -114,7 +135,6 @@ int bad_format (char *uri) {
   if (strstr(uri, format1) == NULL || strstr(uri, format2) == NULL) {
     return 1;
   }
-
   return 0;
 }
 
@@ -147,6 +167,7 @@ void uri_entered_cb(GtkWidget* entry, gpointer data)
   //STUDENTS IMPLEMENT
   char *uri = get_entered_uri(entry);
   browser_window *b_window = NULL;
+
   create_browser(URL_RENDERING_TAB, tab_count, G_CALLBACK(new_tab_created_cb), G_CALLBACK(uri_entered_cb), &b_window);
   tab_count = tab_count + 1;
   pid_t pid = fork();
@@ -155,10 +176,15 @@ void uri_entered_cb(GtkWidget* entry, gpointer data)
     exit(1);
   } else if (pid == 0) {
     printf("the URL is: %s \n", get_entered_uri(entry));
-    render_web_page_in_tab(uri, b_window);
-  } else {
+    if(bad_format(uri) == 1){
+      alert("Bad Format");
+      exit(1);
+    } else if(on_blacklist(uri) == 1){
+      alert("Bad URL");
+    } else {
     create_labeled_tab(data);
     wait(&status);
+    }
   }
   return;
 }
@@ -174,19 +200,26 @@ void uri_entered_cb(GtkWidget* entry, gpointer data)
 */
 void init_blacklist (char *fname) {
   //STUDENTS IMPLEMENT
-  // FILE *fp = fopen(fname, 'r');     // file i/o stuff
+  FILE* fp = fopen(fname, "r");     // file i/o stuff
+  char buf[MAX_URL];
+  int count = 0;
+  
+  if (ferror(fp)) {
+    printf("Error with fopen(). Cannot create blacklist.\n");     // check if fopen succeeded
 
-  // if (ferror(fp)) {
-  //   printf("Error with fopen(). Cannot create blacklist.\n");     // check if fopen succeeded
-  // } else {
-  //   if (fgets()) {          // fgets stuff; i don't really get so i'm gonna look it up later - Ji
+  } else {
+    while(*fgets(buf, MAX_URL, fp) != EOF ) {          // fgets stuff; i don't really get so i'm gonna look it up later - Ji
+      *blacklist[count] = *buf;
+      if(count == MAX_BAD){
+        break;
+      }
+      count++;
+    }
+  }
 
-
-  //   }
-  // }
-
-  // fclose(fp);
-  // return;
+  clearerr(fp);
+  fclose(fp);
+  return;
 }
 
 /* === STUDENTS IMPLEMENT=== */
