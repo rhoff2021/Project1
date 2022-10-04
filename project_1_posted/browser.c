@@ -94,7 +94,28 @@ int on_blacklist (char *uri) {
   //STUDENTS IMPLEMENT
   
   // thinking about putting a for loop here - Ji
+  // char* w_format = "www."
+    for(int i = 0; i<MAX_BAD; i++){
+      char b_url[MAX_URL] = "www.";
+      char b_url_http[MAX_URL] = "http://";
+      char b_url_https[MAX_URL] = "https://";
 
+      if(blacklist[i] == NULL) {
+        return 0;
+      }
+
+      if(strstr(blacklist[i], "www.") == NULL){
+        strcat(b_url, blacklist[i]);
+      } else {
+        strcpy(b_url, blacklist[i]);
+      }
+      strcat(b_url_http, b_url);
+      strcat(b_url_https, b_url);
+
+      if(uri == b_url_http || uri == b_url_https) {
+        return 1;
+      }
+    }
   return 0;
 }
 
@@ -115,7 +136,6 @@ int bad_format (char *uri) {
   if (strstr(uri, format1) == NULL && strstr(uri, format2) == NULL) {
     return 1;
   }
-
   return 0;
 }
 
@@ -206,19 +226,26 @@ void uri_entered_cb(GtkWidget* entry, gpointer data)
 */
 void init_blacklist (char *fname) {
   //STUDENTS IMPLEMENT
-  // FILE *fp = fopen(fname, 'r');     // file i/o stuff
+  FILE* fp = fopen(fname, "r");     // file i/o stuff
+  char buf[MAX_URL];
+  int count = 0;
+  
+  if (ferror(fp)) {
+    printf("Error with fopen(). Cannot create blacklist.\n");     // check if fopen succeeded
 
-  // if (ferror(fp)) {
-  //   printf("Error with fopen(). Cannot create blacklist.\n");     // check if fopen succeeded
-  // } else {
-  //   if (fgets()) {          // fgets stuff; i don't really get so i'm gonna look it up later - Ji
+  } else {
+    while(*fgets(buf, MAX_URL, fp) != EOF ) {          // fgets stuff; i don't really get so i'm gonna look it up later - Ji
+      *blacklist[count] = *buf;
+      if(count == MAX_BAD){
+        break;
+      }
+      count++;
+    }
+  }
 
-
-  //   }
-  // }
-
-  // fclose(fp);
-  // return;
+  clearerr(fp);
+  fclose(fp);
+  return;
 }
 
 /* === STUDENTS IMPLEMENT=== */
