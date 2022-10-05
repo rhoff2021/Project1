@@ -130,7 +130,8 @@ int bad_format (char *uri) {
   const char *format1 = "http://";      // const chars for strstr compare
   const char *format2 = "https://";
 
-  if (strstr(uri, format1) == NULL && strstr(uri, format2) == NULL) { // neither "http://" or "https://" is in URI
+   // checks if either "http://" or "https://" is in URI, if not returns 1, otherwise returns 0
+  if (strstr(uri, format1) == NULL && strstr(uri, format2) == NULL) {
     return 1;
   }
   return 0;
@@ -171,17 +172,18 @@ void uri_entered_cb(GtkWidget* entry, gpointer data)
   } else {
       if (on_blacklist(uri) == 1){           //  check if its on blacklist
         alert("URL IS BLACKLISTED.");
-      } else if (tab_count == MAX_TAB) {   // check the # of tabs
+      } else if (tab_count == MAX_TAB) {     // check the # of tabs
         	alert("MAX TABS REACHED."); 
       } else {                               // URL is valid and can be rendered
           pid_t pid = fork();
-          // int status;
           char cnum[4];
+
           sprintf(cnum, "%d", tab_count);
-          if(pid == -1){
+
+          if(pid == -1){                     // check if new forked child has error 
               perror("failed to fork");
               exit(1);
-          } else if (pid == 0) {
+          } else if (pid == 0) {             // otherwise it renders a new tab window
               execl("./render", "render", cnum,uri,(char*)NULL); 
               perror("child failed to exec");
 
@@ -203,27 +205,27 @@ void uri_entered_cb(GtkWidget* entry, gpointer data)
 */
 void init_blacklist (char *fname) {
   //STUDENTS IMPLEMENT
-  FILE* fp = fopen(fname, "r");     // file i/o stuff
+  FILE* fp = fopen(fname, "r");           // opens file full of blacklisted urls
   char buf[MAX_URL];
   int count = 0;
-  if (ferror(fp)) {
-    printf("Error with fopen(). Cannot create blacklist.\n");     // check if fopen succeeded
+  if (ferror(fp)) {                       // check if fopen succeeded
+    printf("Error with fopen(). Cannot create blacklist.\n");     
   } else {
     while(fgets(buf, MAX_URL, fp) != NULL ) {
       strtok(buf, "\n\r");                // gets rid of special characters
 
-      if (strstr(buf, "www.") != NULL) { // makes sure there is a www. at the begining of url's in blacklist
-        sscanf(buf, "www.%s", blacklist[count]);
-      } else {
-        strcpy(blacklist[count], buf);
+      if (strstr(buf, "www.") != NULL) {  // checks if there is a www. at the begining of url's in blacklist
+        sscanf(buf, "www.%s", blacklist[count]); // if there is it removes www. and copies url in local blacklist
+      } else {                            // if there was not a www., copies url into local blacklist
+        strcpy(blacklist[count], buf); 
       }
 
-      if(count == MAX_BAD){
+      if(count == MAX_BAD){               // checks if the max amount of urls allowed in blacklist has been reached
         break;
       }
       count++;
     }
-    fclose(fp);
+    fclose(fp);                           // closes file when done looping through it
   }
   clearerr(fp);
   return;
@@ -251,14 +253,14 @@ int main(int argc, char **argv)
   // (c) Create a controller process then run the controller
   int status;
   pid_t child_process = fork();
-  if(child_process == -1) { // child
+  if(child_process == -1) {           // if error found, exits
     perror("fork() failed");
     exit(1);
-  } else if (child_process == 0) {
+  } else if (child_process == 0) {    // running child process
       run_control();
       kill(child_process, 1);
-  } else {
-    wait(&status); // parent
+  } else {                            // running parent process
+    wait(&status);
   }
   return 0;
 }
