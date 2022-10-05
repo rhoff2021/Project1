@@ -93,12 +93,16 @@ int on_blacklist (char *uri) {
   //STUDENTS IMPLEMENT
 
   char b_url[MAX_URL];
-  if((strstr(uri, "https") == NULL) ) {
-    sscanf(uri, "http://www.%s", b_url);
+  // remove https://wwww or http://www from uri
+  if((strstr(uri, "https") == NULL) ) { //checks for https
+    sscanf(uri, "http://%s", b_url);
   } else {
-    sscanf(uri, "https://www.%s", b_url);
+    sscanf(uri, "https://%s", b_url);
   }
-  printf("b_url: %s\n", b_url);
+
+  if(strstr(b_url, "www.") != NULL){
+    sscanf(b_url, "www.%s", b_url);
+  }
 
   for (int i = 0; i < MAX_BAD; i++) {
     printf("blacklist[%d]: %s\n", i, blacklist[i]);
@@ -106,12 +110,10 @@ int on_blacklist (char *uri) {
     if (strlen(blacklist[i]) == 0) {      // reached end of blacklist
       break;
     }
-
     if (strcmp(b_url, blacklist[i]) == 0) { // found uri in blacklist
       printf("-found uri in blacklist\n");
       return 1;
     }
-    
   }
     printf("-post loop\n");
   return 0;
@@ -187,11 +189,12 @@ void uri_entered_cb(GtkWidget* entry, gpointer data)
               exit(1);
           } else if (pid == 0) {
               printf("The Url is %s\n", uri);
-
+              // execl("./render", "render", tab_count ,uri,NULL); 
               create_browser(URL_RENDERING_TAB, tab_count, G_CALLBACK(new_tab_created_cb),
 		            G_CALLBACK(uri_entered_cb), &t_window);
               render_web_page_in_tab(uri, t_window);
               tab_count++;
+              printf("%d", tab_count);
           } else {
               wait(&status);
           }
@@ -257,7 +260,6 @@ int main(int argc, char **argv)
     fprintf (stderr, "browser <blacklist_file>\n");
     exit (0);
   }
-
   init_blacklist(argv[1]);
 
   int status;
