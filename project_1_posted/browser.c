@@ -189,7 +189,7 @@ void uri_entered_cb(GtkWidget* entry, gpointer data)
               exit(1);
           } else if (pid == 0) {
               printf("The Url is %s\n", uri);
-              // execl("./render", "render", tab_count ,uri,NULL); 
+              execl("./render", "render", tab_count ,uri,NULL); 
               create_browser(URL_RENDERING_TAB, tab_count, G_CALLBACK(new_tab_created_cb),
 		            G_CALLBACK(uri_entered_cb), &t_window);
               render_web_page_in_tab(uri, t_window);
