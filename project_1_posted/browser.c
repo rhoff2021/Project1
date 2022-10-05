@@ -106,39 +106,6 @@ int on_blacklist (char *uri) {
     }
 
   }
-  
-  
-  /*
-  char uri_copy[MAX_URL];
-  strcat(uri, "\n");
-  strcpy(uri_copy, uri);
-  printf("Uri: %s", uri_copy);
-  for(int i = 0; i<MAX_BAD; i++){
-    char b_url[MAX_URL] = "www.";
-    char b_url_http[MAX_URL] = "http://";
-    char b_url_https[MAX_URL] = "https://";
-
-    if(strlen(blacklist[i]) == 0) {
-      return 0;
-    }
-    // printf("%d url is:%s-\n", i,blacklist[i]);
-    if(strstr(blacklist[i], "www.") == NULL){
-      strcat(b_url, blacklist[i]);
-    } else {
-      strcpy(b_url, blacklist[i]);
-    }
-    strcat(b_url_http, b_url);
-    strcat(b_url_https, b_url);
-    printf("-%s", b_url_http);
-    printf("-%s", b_url_https);
-    printf("%d\n%d\n",strcmp("a","a"), strcmp(uri_copy, b_url_https));
-
-    if(strcmp(uri_copy, b_url_http) == 0 && strcmp(uri_copy, b_url_https) == 0) {
-      printf("url is on blacklist\n");
-      return 1;
-    }
-  }
-  */
   return 0;
 }
 
