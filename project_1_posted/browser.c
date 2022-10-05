@@ -80,7 +80,7 @@ int run_control()
 
 /* === STUDENTS IMPLEMENT=== */
 /* 
-    Function: on_blacklist  --> "Check if the provided URI is in th blacklist"
+    Function: on_blacklist  --> "Check if the provided URI is in the blacklist"
     Input:    char* uri     --> "URI to check against the blacklist"
     Returns:  True  (1) if uri in blacklist
               False (0) if uri not in blacklist
@@ -93,29 +93,26 @@ int on_blacklist (char *uri) {
   //STUDENTS IMPLEMENT
 
   char b_url[MAX_URL];
-  // remove https://wwww or http://www from uri
-  if((strstr(uri, "https") == NULL) ) { //checks for https
+  // remove https:// or http:// from uri
+  if((strstr(uri, "https") == NULL) ) { // uri does not contain https://, so remove http://
     sscanf(uri, "http://%s", b_url);
   } else {
-    sscanf(uri, "https://%s", b_url);
+    sscanf(uri, "https://%s", b_url); // removes https://
   }
-
+  // check if uri has "www."" and removes it
   if(strstr(b_url, "www.") != NULL){
     sscanf(b_url, "www.%s", b_url);
   }
 
+  // loops through blacklist and compares
   for (int i = 0; i < MAX_BAD; i++) {
-    printf("blacklist[%d]: %s\n", i, blacklist[i]);
-
-    if (strlen(blacklist[i]) == 0) {      // reached end of blacklist
-      break;
+    if (strlen(blacklist[i]) == 0) {          // reached end of blacklist and returns early
+      return 0;
     }
-    if (strcmp(b_url, blacklist[i]) == 0) { // found uri in blacklist
-      printf("-found uri in blacklist\n");
+    if (strcmp(b_url, blacklist[i]) == 0) {   // found uri in blacklist
       return 1;
     }
   }
-    printf("-post loop\n");
   return 0;
 }
 
@@ -133,7 +130,7 @@ int bad_format (char *uri) {
   const char *format1 = "http://";      // const chars for strstr compare
   const char *format2 = "https://";
 
-  if (strstr(uri, format1) == NULL && strstr(uri, format2) == NULL) {
+  if (strstr(uri, format1) == NULL && strstr(uri, format2) == NULL) { // neither "http://" or "https://" is in URI
     return 1;
   }
   return 0;
@@ -167,37 +164,29 @@ void uri_entered_cb(GtkWidget* entry, gpointer data)
 {
   //STUDENTS IMPLEMENT
   char *uri = get_entered_uri(entry);
-  
-  // first checks if there is a URL, then checks the format
-  // if format is good, it will check if its on blacklist
-  // if not it will check the # of tabs
-  if (strlen(uri) == 0) {                     
+  if (strlen(uri) == 0 || entry == NULL) {   // first checks if there is a URL,                   
   	alert("NO URL.");
-  } else if (bad_format(uri) == 1) {
+  } else if (bad_format(uri) == 1) {         // then checks the format
   	alert("BAD FORMAT.");
   } else {
-      if (on_blacklist(uri) == 1){
+      if (on_blacklist(uri) == 1){           //  check if its on blacklist
         alert("URL IS BLACKLISTED.");
-      } else if (tab_count+1 == MAX_URL) {
-        	alert("MAX TABS REACHED.");
-      } else {                  // URL is valid and can be rendered
-          // render page
+      } else if (tab_count == MAX_TAB) {   // check the # of tabs
+        	alert("MAX TABS REACHED."); 
+      } else {                               // URL is valid and can be rendered
           pid_t pid = fork();
-          int status;
-          browser_window *t_window = NULL;
+          // int status;
+          char cnum[4];
+          sprintf(cnum, "%d", tab_count);
           if(pid == -1){
+              perror("failed to fork");
               exit(1);
           } else if (pid == 0) {
-              printf("The Url is %s\n", uri);
-              execl("./render", "render", tab_count ,uri,NULL); 
-              create_browser(URL_RENDERING_TAB, tab_count, G_CALLBACK(new_tab_created_cb),
-		            G_CALLBACK(uri_entered_cb), &t_window);
-              render_web_page_in_tab(uri, t_window);
-              tab_count++;
-              printf("%d", tab_count);
-          } else {
-              wait(&status);
+              execl("./render", "render", cnum,uri,(char*)NULL); 
+              perror("child failed to exec");
+
           }
+          tab_count++;
       }
     }
   return;
@@ -252,16 +241,14 @@ void init_blacklist (char *fname) {
 */
 int main(int argc, char **argv)
 {
-
-  //STUDENT IMPLEMENT
-
   // (a) Check arguments for blacklist, error and warn if no blacklist
   if (argc != 2) {
     fprintf (stderr, "browser <blacklist_file>\n");
     exit (0);
   }
+  // (b) Initialize the blacklist of url's
   init_blacklist(argv[1]);
-
+  // (c) Create a controller process then run the controller
   int status;
   pid_t child_process = fork();
   if(child_process == -1) { // child
@@ -273,6 +260,5 @@ int main(int argc, char **argv)
   } else {
     wait(&status); // parent
   }
-
   return 0;
 }
