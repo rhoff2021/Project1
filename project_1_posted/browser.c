@@ -93,19 +93,27 @@ int on_blacklist (char *uri) {
   //STUDENTS IMPLEMENT
 
   char b_url[MAX_URL];
-  sscanf(uri, "https://%s", b_url);
+  if((strstr(uri, "https") == NULL) ) {
+    sscanf(uri, "http://www.%s", b_url);
+  } else {
+    sscanf(uri, "https://www.%s", b_url);
+  }
+  printf("b_url: %s\n", b_url);
 
   for (int i = 0; i < MAX_BAD; i++) {
+    printf("blacklist[%d]: %s\n", i, blacklist[i]);
 
     if (strlen(blacklist[i]) == 0) {      // reached end of blacklist
       break;
     }
 
-    if (strcmp(b_url, blacklist[i]) == 0) {
+    if (strcmp(b_url, blacklist[i]) == 0) { // found uri in blacklist
+      printf("-found uri in blacklist\n");
       return 1;
     }
-
+    
   }
+    printf("-post loop\n");
   return 0;
 }
 
@@ -211,7 +219,12 @@ void init_blacklist (char *fname) {
   } else {
     while(fgets(buf, MAX_URL, fp) != NULL ) {
       strtok(buf, "\n\r");                // gets rid of special characters
-      strcpy(blacklist[count], buf);
+
+      if (strstr(buf, "www.") != NULL) { // makes sure there is a www. at the begining of url's in blacklist
+        sscanf(buf, "www.%s", blacklist[count]);
+      } else {
+        strcpy(blacklist[count], buf);
+      }
 
       if(count == MAX_BAD){
         break;
