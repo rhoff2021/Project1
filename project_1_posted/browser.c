@@ -98,7 +98,7 @@ int on_blacklist (char *uri) {
   for (int i = 0; i < MAX_BAD; i++) {
 
     if (strlen(blacklist[i]) == 0) {      // reached end of blacklist
-      return 0;
+      break;
     }
 
     if (strcmp(b_url, blacklist[i]) == 0) {
