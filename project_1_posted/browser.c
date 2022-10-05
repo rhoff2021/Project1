@@ -92,6 +92,21 @@ int run_control()
 int on_blacklist (char *uri) {
   //STUDENTS IMPLEMENT
 
+  char b_url[MAX_URL];
+  
+  sscanf(uri, "https://%s", b_url);
+
+  for (int i = 0; i < MAX_BAD; i++) {
+    if (strlen(blacklist[i]) == 0) {
+      return 0;
+    }
+
+    if (strcmp(b_url, blacklist[i]) == 0) {
+      return 1;
+    }
+  }
+
+/*
   char uri_copy[MAX_URL];
   strcat(uri, "\n");      //Cannot do this because adding char to string without enough size
 
@@ -137,6 +152,7 @@ int on_blacklist (char *uri) {
       return 1;
     }
   }
+*/ 
   return 0;
 }
 
@@ -242,9 +258,6 @@ void init_blacklist (char *fname) {
     while(fgets(buf, MAX_URL, fp) != NULL) {
       //*blacklist[count] = *buf;
       blacklist[count] = buf;
-      
-      printf("size of black list is: %ld\n", sizeof(blacklist));
-      printf("buf is: %s\n", buf);
       
       if(count == MAX_BAD){
         break;
