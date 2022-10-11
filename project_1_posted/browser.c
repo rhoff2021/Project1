@@ -175,6 +175,7 @@ void uri_entered_cb(GtkWidget* entry, gpointer data)
       } else if (tab_count == MAX_TAB) {     // check the # of tabs
         	alert("MAX TABS REACHED."); 
       } else {                               // URL is valid and can be rendered
+          int status;
           pid_t pid = fork();
           char cnum[4];
 
@@ -184,9 +185,8 @@ void uri_entered_cb(GtkWidget* entry, gpointer data)
               perror("failed to fork");
               exit(1);
           } else if (pid == 0) {             // otherwise it renders a new tab window
-              execl("./render", "render", cnum,uri,(char*)NULL); 
+              execl("./render", "render", cnum, uri, (char*)NULL);
               perror("child failed to exec");
-
           }
           tab_count++;
       }
