@@ -87,6 +87,16 @@ int non_block_pipe (int fd) {
 // Checks if tab is bad and url violates constraints; if so, return.
 // Otherwise, send NEW_URI_ENTERED command to the tab on inbound pipe
 void handle_uri (char *uri, int tab_index) {
+  if(bad_format (uri) == 1) {
+    alert("Bad Format");
+    return;
+  } else{
+    if(on_blacklist(uri) == 1) {
+      alert("On blaclist");
+      return;
+    }
+  }
+  
 }
 
 
@@ -219,9 +229,21 @@ int main(int argc, char **argv)
   }
 
   init_tabs ();
+  init_blacklist("blacklist");
   // init blacklist (see util.h), and favorites (write this, see above)
-
-
+  
+  int status;
+  pid_t child = fork();
+  if (child == -1){
+    perror("fork() failed");
+    exit(1);
+  } else if (child == 0) {
+    int comm[0];
+    pipe(comm[0]);
+    run_control();
+  } else {
+    wait(&status);
+  }
   // Fork controller
   // Child creates a pipe for itself comm[0]
   // then calls run_control ()

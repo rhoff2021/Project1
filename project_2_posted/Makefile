@@ -12,6 +12,15 @@ all:  $(EXS) $(BINS)
 browser: $(BINS) browser.c
 	$(CC) $(BINS) browser.c $(DEPS) -L ${LIB} $(CFLAGS) $(LDFLAGS) -o browser
 
+test: clean all
+	clear
+	./browser
+
+solution:
+	echo === RUNNING SOLUTION CODE ===
+	./browser_sol
+	echo === SOLUTION CODE COMPLETE ===
+
 submission: clean
 	@echo "Creating Tar Submission..."
 	@read -p "Please enter your group number: " grou_num; \
