@@ -12,7 +12,7 @@
 #define MAX_BAD 1000
 #define MAX_URL 100
 #define MAX_FAV 100
-#define MAX_LABELS 1000
+#define MAX_LABELS 100
 
 
 comm_channel comm[MAX_TABS];         // Communication pipes 
@@ -34,12 +34,25 @@ tab_list TABS[MAX_TABS];
 
 // return total number of tabs
 int get_num_tabs () {
-  return 1;
+  int count = 1;
+  for (int i = 0; i < MAX_TABS; i++) {            // checks # of tabs in TABS array
+    if (TABS[i].free == 0) {
+      count++;
+    }
+  }
+  return count;
 }
 
 // get next free tab index
 int get_free_tab () {
-  return 1;
+  int free_index;
+  for (int i = 0; i < MAX_TABS; i++) {           // looks for TABS[i].free == 1
+    if (TABS[i].free == 1) {
+      free_index = i;
+      break;
+    }
+  }
+  return free_index;
 }
 
 // init TABS data structure
@@ -58,6 +71,9 @@ void init_tabs () {
 // return 0 if favorite is ok, -1 otherwise
 // both max limit, already a favorite (Hint: see util.h) return -1
 int fav_ok (char *uri) {
+  if (on_favorites(uri)) {      // check if on favorites list (using util.h function)
+    return -1;
+  }
   return 0;
 }
 
@@ -71,6 +87,26 @@ void update_favorites_file (char *uri) {
 
 // Set up favorites array
 void init_favorites (char *fname) {
+  FILE *fp = fopen(fname, "r");
+  char buf[MAX_URL];
+  int count = 0;
+
+  if (ferror(fp)) {
+    printf("File error. Could not initialize favorites array.\n");          // error checking favorites file
+  } else {
+    while (fgets(buf, MAX_URL, fp) != NULL) {         // fgets to make favorites array
+      strtok(buf, "\n\r");
+      
+      if (count == MAX_FAV) {         //check if favorites array is full
+        break;
+      } else {
+        strcpy(favorites[count], buf);
+      }
+      count++;
+    }
+  }
+  clearerr(fp);
+  fclose(fp);
 }
 
 // Make fd non-blocking just as in class!
@@ -87,16 +123,16 @@ int non_block_pipe (int fd) {
 // Checks if tab is bad and url violates constraints; if so, return.
 // Otherwise, send NEW_URI_ENTERED command to the tab on inbound pipe
 void handle_uri (char *uri, int tab_index) {
-  if(bad_format (uri) == 1) {
-    alert("Bad Format");
+  if(bad_format(uri) == 1) {
+    alert("BAD FORMAT");
     return;
   } else{
     if(on_blacklist(uri) == 1) {
-      alert("On blaclist");
+      alert("ON BLACKLIST");
       return;
     }
+    //write(comm[tab_index].inbound[1], NEW_URI_ENTERED, );         // putting a write here, but i don't know how to go about this
   }
-  
 }
 
 
@@ -131,13 +167,17 @@ void new_tab_created_cb (GtkButton *button, gpointer data) {
   }
 
   // at tab limit?
-
+  if (get_num_tabs() == MAX_TABS) {           // counts tabs using get_num_tabs
+    alert("MAX TABS REACHED.");
+    return;
+  }
 
   // Get a free tab
-
+  int index = get_free_tab();             // uses get_free_tab to get index for new tab
 
   // Create communication pipes for this tab
-  
+  pipe(comm[index].inbound);          // not sure if this is ok but putting these pipes here
+  pipe(comm[index].outbound);
 
   // Make the read ends non-blocking 
   
@@ -231,6 +271,7 @@ int main(int argc, char **argv)
   init_tabs ();
   init_blacklist("blacklist");
   // init blacklist (see util.h), and favorites (write this, see above)
+  //init_favorites();
   
   int status;
   pid_t child = fork();
@@ -239,7 +280,7 @@ int main(int argc, char **argv)
     exit(1);
   } else if (child == 0) {
     int comm[0];
-    pipe(comm[0]);
+    pipe(&comm[0]);
     run_control();
   } else {
     wait(&status);
