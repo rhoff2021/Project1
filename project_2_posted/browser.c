@@ -25,7 +25,8 @@ typedef struct tab_list {
 } tab_list;
 
 // Tab bookkeeping
-tab_list TABS[MAX_TABS];  
+tab_list TABS[MAX_TABS];
+
 
 
 /************************/
@@ -73,6 +74,8 @@ void init_tabs () {
 int fav_ok (char *uri) {
   if (on_favorites(uri)) {      // check if on favorites list (using util.h function)
     return -1;
+  } else if (num_fav+1 == MAX_FAV){ // check if we reach MAX_FAV
+    return -1;
   }
   return 0;
 }
@@ -87,7 +90,7 @@ void update_favorites_file (char *uri) {
 
 // Set up favorites array
 void init_favorites (char *fname) {
-  FILE *fp = fopen(fname, "r");
+  FILE *fp = fopen(fname, "w+");
   char buf[MAX_URL];
   int count = 0;
 
@@ -123,16 +126,16 @@ int non_block_pipe (int fd) {
 // Checks if tab is bad and url violates constraints; if so, return.
 // Otherwise, send NEW_URI_ENTERED command to the tab on inbound pipe
 void handle_uri (char *uri, int tab_index) {
-  if(bad_format(uri) == 1) {
+  if(bad_format(uri) == 1) { // checks for format first, returns early if bad format
     alert("BAD FORMAT");
     return;
   } else{
-    if(on_blacklist(uri) == 1) {
+    if(on_blacklist(uri) == 1) { // checks if uri is on blacklist and returns
       alert("ON BLACKLIST");
       return;
     }
-    //write(comm[tab_index].inbound[1], NEW_URI_ENTERED, );         // putting a write here, but i don't know how to go about this
   }
+  write(comm[tab_index].inbound[1], NEW_URI_ENTERED, sizeof(int));         // putting a write here, but i don't know how to go about this
 }
 
 
@@ -161,7 +164,6 @@ void uri_entered_cb (GtkWidget* entry, gpointer data) {
 // Create new tab process with pipes
 // Long function
 void new_tab_created_cb (GtkButton *button, gpointer data) {
-  
   if (data == NULL) {
     return;
   }
@@ -176,10 +178,13 @@ void new_tab_created_cb (GtkButton *button, gpointer data) {
   int index = get_free_tab();             // uses get_free_tab to get index for new tab
 
   // Create communication pipes for this tab
-  pipe(comm[index].inbound);          // not sure if this is ok but putting these pipes here
-  pipe(comm[index].outbound);
+  // int pipe(comm[index].inbound);          // not sure if this is ok but putting these pipes here
+  // int pipe(comm[index].outbound);
+  int comm[index].inbound;
+  int comm[index].outbound;
 
-  // Make the read ends non-blocking 
+  // Make the read ends non-blocking
+  
   
   
   // fork and create new render tab
@@ -244,7 +249,7 @@ int run_control() {
     // Loop across all pipes from VALID tabs -- starting from 0
     for (i=0; i<MAX_TABS; i++) {
       if (TABS[i].free) continue;
-      nRead = read(comm[i].outbound[0], &req, sizeof(req_t));
+      // nRead = read(comm[i].outbound[0], &req, sizeof(req_t));
 
       // Check that nRead returned something before handling cases
 
@@ -262,16 +267,11 @@ int run_control() {
 
 int main(int argc, char **argv)
 {
-
-  if (argc != 1) {
-    fprintf (stderr, "browser <no_args>\n");
-    exit (0);
-  }
-
   init_tabs ();
-  init_blacklist("blacklist");
+  init_blacklist(".blacklist");
+  init_favorites(".favorites");
+
   // init blacklist (see util.h), and favorites (write this, see above)
-  //init_favorites();
   
   int status;
   pid_t child = fork();
@@ -279,8 +279,12 @@ int main(int argc, char **argv)
     perror("fork() failed");
     exit(1);
   } else if (child == 0) {
-    int comm[0];
-    pipe(&comm[0]);
+    int comm[2]; // child creates a pipe for itself
+    int child_pipe = pipe(comm);
+    if(child_pipe == -1) {
+      perror("error creating child pipe");
+      exit(-1)
+    }
     run_control();
   } else {
     wait(&status);
@@ -289,5 +293,4 @@ int main(int argc, char **argv)
   // Child creates a pipe for itself comm[0]
   // then calls run_control ()
   // Parent waits ...
-
 }
