@@ -177,17 +177,34 @@ void new_tab_created_cb (GtkButton *button, gpointer data) {
   // Get a free tab
   int index = get_free_tab();             // uses get_free_tab to get index for new tab
 
-  // Create communication pipes for this tab
-  // int pipe(comm[index].inbound);          // not sure if this is ok but putting these pipes here
-  // int pipe(comm[index].outbound);
-  int comm[index].inbound;
-  int comm[index].outbound;
+  // Create communication pipes for this tab 
+  pipe(comm[index].inbound);
+  pipe(comm[index].outbound);
 
   // Make the read ends non-blocking
-  
-  
-  
+  int inbound_flags = fcntl(comm[index].inbound[0], F_GETFL, 0);
+  fcntl(comm[index].inbound[0], F_SETFL, inbound_flags | O_NONBLOCK);
+  int outbound_flags = fcntl(comm[index].outbound[0], F_GETFL, 0);
+  fcntl(comm[index].outbound[0], F_SETFL, outbound_flags | O_NONBLOCK);
+
   // fork and create new render tab
+  int tab_process = fork();
+  int status;
+  char arg1[4];
+  char inbound_arg[8];
+  char outbound_arg[8];
+  sprintf(arg1, "%d", index);
+  sprintf(arg1, "%d", index);
+
+  if(tab_process == -1) {
+    perror("fork() failed");
+    exit(1);
+  } else if (tab_process == 0) {
+      execl("./render", "render", arg1, comm[index].inbound, comm[index].outbound, (char*)NULL);
+  } else {
+      wait(&status);
+  }
+
   // Note: render has different arguments now: tab_index, both pairs of pipe fd's
   // (inbound then outbound) -- this last argument will be 4 integers "a b c d"
   // Hint: stringify args
@@ -250,6 +267,9 @@ int run_control() {
     for (i=0; i<MAX_TABS; i++) {
       if (TABS[i].free) continue;
       // nRead = read(comm[i].outbound[0], &req, sizeof(req_t));
+      // if(nRead == -1 && errno == EAGAIN) {
+      //   alert("Failed to read outbound pipe");
+      // }
 
       // Check that nRead returned something before handling cases
 
@@ -283,7 +303,7 @@ int main(int argc, char **argv)
     int child_pipe = pipe(comm);
     if(child_pipe == -1) {
       perror("error creating child pipe");
-      exit(-1)
+      exit(-1);
     }
     run_control();
   } else {
