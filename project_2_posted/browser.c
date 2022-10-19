@@ -191,16 +191,17 @@ void new_tab_created_cb (GtkButton *button, gpointer data) {
   int tab_process = fork();
   int status;
   char arg1[4];
-  char inbound_arg[8];
-  char outbound_arg[8];
+  char arg2[8];
+
   sprintf(arg1, "%d", index);
-  sprintf(arg1, "%d", index);
+  sprintf(arg2, "%d %d %d %d", comm[index].inbound[0], comm[index].inbound[1], comm[index].outbound[0], comm[index].outbound[2]);
+
 
   if(tab_process == -1) {
     perror("fork() failed");
     exit(1);
   } else if (tab_process == 0) {
-      execl("./render", "render", arg1, comm[index].inbound, comm[index].outbound, (char*)NULL);
+      execl("./render", "render", arg1, arg2, (char*)NULL);
   } else {
       wait(&status);
   }
