@@ -173,9 +173,9 @@ void new_tab_created_cb (GtkButton *button, gpointer data) {
   if (data == NULL) {
     return;
   }
-
+  printf("new tab");
   // at tab limit?
-  if (get_num_tabs() == MAX_TABS) {           // counts tabs using get_num_tabs
+  if (get_num_tabs() > MAX_TABS) {           // counts tabs using get_num_tabs
     alert("MAX TABS REACHED.");
     return;
   }
@@ -188,33 +188,36 @@ void new_tab_created_cb (GtkButton *button, gpointer data) {
   pipe(comm[index].outbound);
 
   // Make the read ends non-blocking
-  int inbound_flags;
-  //  = fcntl(comm[index].inbound[0], F_GETFL, 0);
-  // fcntl(comm[index].inbound[0], F_SETFL, inbound_flags | O_NONBLOCK);
-  int outbound_flags; 
-  // = fcntl(comm[index].outbound[0], F_GETFL, 0);
-  // fcntl(comm[index].outbound[0], F_SETFL, outbound_flags | O_NONBLOCK);
-  if ((inbound_flags = non_block_pipe(comm[index].inbound[0]) != 0)){
-    return;
-  } else if ((outbound_flags = non_block_pipe(comm[index].outbound[0])) != 0){
-    return;
-  }
+  // int inbound_flags;
+  // //  = fcntl(comm[index].inbound[0], F_GETFL, 0);
+  // // fcntl(comm[index].inbound[0], F_SETFL, inbound_flags | O_NONBLOCK);
+  // int outbound_flags; 
+  // // = fcntl(comm[index].outbound[0], F_GETFL, 0);
+  // // fcntl(comm[index].outbound[0], F_SETFL, outbound_flags | O_NONBLOCK);
+  // if ((inbound_flags = non_block_pipe(comm[index].inbound[0]) != 0)){
+  //   return;
+  // } else if ((outbound_flags = non_block_pipe(comm[index].outbound[0])) != 0){
+  //   return;
+  // }
 
   // fork and create new render tab
   int tab_process = fork();
   int status;
-  char arg1[4];
-  char arg2[100];
 
-  sprintf(arg1, "%d", index);
-  sprintf(arg2, "%d %d %d %d", comm[index].inbound[0], comm[index].inbound[1], comm[index].outbound[0], comm[index].outbound[1]);
 
+  // browser_window * t_window = NULL;
+  // create_browser(URL_RENDERING_TAB, index, G_CALLBACK(new_tab_created_cb), G_CALLBACK(uri_entered_cb), t_window, comm[index]);
 
   if(tab_process == -1) {
     perror("fork() failed");
     exit(1);
   } else if (tab_process == 0) {
-      execl("./render", "render", arg1, arg2, (char*)NULL);
+      char arg1[4];
+      char arg2[100];
+      sprintf(arg1, "%d", index);
+      sprintf(arg2, "%d %d %d %d", comm[index].inbound[0], comm[index].inbound[1], comm[index].outbound[0], comm[index].outbound[1]);
+      // printf("%s", arg2);
+      execl("./render", (char*)"render", (char*)arg1, (char*)arg2, NULL);
   } else {
       wait(&status);
   }
@@ -301,6 +304,10 @@ int run_control() {
 
 int main(int argc, char **argv)
 {
+  if(argc != 1) {
+    printf(stderr, "browser <no_args>\n");
+    exit(0);
+  }
   init_tabs ();
   init_blacklist(".blacklist");
   init_favorites(".favorites");
@@ -309,19 +316,19 @@ int main(int argc, char **argv)
   
   int status;
   pid_t child = fork();
-  if (child == -1){
+  if (child < 0){
     perror("fork() failed");
     exit(1);
   } else if (child == 0) {
-    int comm[2]; // child creates a pipe for itself
-    int child_pipe = pipe(comm);
-    if(child_pipe == -1) {
-      perror("error creating child pipe");
-      exit(-1);
-    }
+    // child creates a pipe for itself
+    // if(pipe(comm[0].outbound) == -1) {
+    //   perror("error creating child pipe");
+    // }
+    pipe(comm[0].outbound);
     run_control();
   } else {
     wait(&status);
+    exit(0);
   }
   // Fork controller
   // Child creates a pipe for itself comm[0]

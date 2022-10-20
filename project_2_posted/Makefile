@@ -13,6 +13,7 @@ browser: $(BINS) browser.c
 	$(CC) $(BINS) browser.c $(DEPS) -L ${LIB} $(CFLAGS) $(LDFLAGS) -o browser
 
 test: clean all
+	make all
 	clear
 	./browser
 
