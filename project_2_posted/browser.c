@@ -116,6 +116,12 @@ void init_favorites (char *fname) {
 // Return 0 if ok, -1 otherwise
 // Really a util but I want you to do it :-)
 int non_block_pipe (int fd) {
+  int nFlags;
+  
+  if ((nFlags = fcntl(fd, F_GETFL, 0)) < 0)
+    return -1;
+  if ((fcntl(fd, F_SETFL, nFlags | O_NONBLOCK)) < 0)
+    return -1;
   return 0;
 }
 
@@ -182,19 +188,26 @@ void new_tab_created_cb (GtkButton *button, gpointer data) {
   pipe(comm[index].outbound);
 
   // Make the read ends non-blocking
-  int inbound_flags = fcntl(comm[index].inbound[0], F_GETFL, 0);
-  fcntl(comm[index].inbound[0], F_SETFL, inbound_flags | O_NONBLOCK);
-  int outbound_flags = fcntl(comm[index].outbound[0], F_GETFL, 0);
-  fcntl(comm[index].outbound[0], F_SETFL, outbound_flags | O_NONBLOCK);
+  int inbound_flags;
+  //  = fcntl(comm[index].inbound[0], F_GETFL, 0);
+  // fcntl(comm[index].inbound[0], F_SETFL, inbound_flags | O_NONBLOCK);
+  int outbound_flags; 
+  // = fcntl(comm[index].outbound[0], F_GETFL, 0);
+  // fcntl(comm[index].outbound[0], F_SETFL, outbound_flags | O_NONBLOCK);
+  if ((inbound_flags = non_block_pipe(comm[index].inbound[0]) != 0)){
+    return;
+  } else if ((outbound_flags = non_block_pipe(comm[index].outbound[0])) != 0){
+    return;
+  }
 
   // fork and create new render tab
   int tab_process = fork();
   int status;
   char arg1[4];
-  char arg2[8];
+  char arg2[100];
 
   sprintf(arg1, "%d", index);
-  sprintf(arg2, "%d %d %d %d", comm[index].inbound[0], comm[index].inbound[1], comm[index].outbound[0], comm[index].outbound[2]);
+  sprintf(arg2, "%d %d %d %d", comm[index].inbound[0], comm[index].inbound[1], comm[index].outbound[0], comm[index].outbound[1]);
 
 
   if(tab_process == -1) {
