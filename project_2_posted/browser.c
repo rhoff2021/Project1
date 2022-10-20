@@ -279,18 +279,19 @@ int run_control() {
     // Loop across all pipes from VALID tabs -- starting from 0
     for (i=0; i<MAX_TABS; i++) {
       if (TABS[i].free) continue;
-      // nRead = read(comm[i].outbound[0], &req, sizeof(req_t));
-      // if(nRead == -1 && errno == EAGAIN) {
-      //   alert("Failed to read outbound pipe");
-      // }
+      nRead = read(comm[i].outbound[0], &req, sizeof(req_t));  
 
       // Check that nRead returned something before handling cases
+      if(nRead == -1 && errno == EAGAIN) {
+        break;
+      }
 
       // Case 1: PLEASE_DIE
 
       // Case 2: TAB_IS_DEAD
 	    
       // Case 3: IS_FAV
+      printf("nRead is: %d", nRead);
     }
     usleep(1000);
   }
