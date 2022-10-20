@@ -140,7 +140,8 @@ void handle_uri (char *uri, int tab_index) {
       return;
     }
   }
-  write(comm[tab_index].inbound[1], NEW_URI_ENTERED, sizeof(int));         // putting a write here, but i don't know how to go about this
+  printf("in handle, past tests\n");
+  write(comm[tab_index].outbound[1], NEW_URI_ENTERED, sizeof(int));         // putting a write here, but i don't know how to go about this
 }
 
 
@@ -158,9 +159,9 @@ void uri_entered_cb (GtkWidget* entry, gpointer data) {
 
   // Get the URL (hint: wrapper.h)
   char *uri = get_entered_uri(entry);
-
   // Hint: now you are ready to handle_the_uri
   handle_uri(uri, cur_tab);
+  printf("past handle_uri\n");
 
 }
   
@@ -173,7 +174,6 @@ void new_tab_created_cb (GtkButton *button, gpointer data) {
   if (data == NULL) {
     return;
   }
-  printf("new tab");
   // at tab limit?
   if (get_num_tabs() >= MAX_TABS) {           // counts tabs using get_num_tabs
     alert("MAX TABS REACHED.");
@@ -189,17 +189,8 @@ void new_tab_created_cb (GtkButton *button, gpointer data) {
   pipe(comm[index].outbound);
 
   // Make the read ends non-blocking
-  int inbound_flags;
-  //  = fcntl(comm[index].inbound[0], F_GETFL, 0);
-  // fcntl(comm[index].inbound[0], F_SETFL, inbound_flags | O_NONBLOCK);
-  int outbound_flags; 
-  // = fcntl(comm[index].outbound[0], F_GETFL, 0);
-  // fcntl(comm[index].outbound[0], F_SETFL, outbound_flags | O_NONBLOCK);
-  if ((inbound_flags = non_block_pipe(comm[index].inbound[0]) != 0)){
-    return;
-  } else if ((outbound_flags = non_block_pipe(comm[index].outbound[0])) != 0){
-    return;
-  }
+  non_block_pipe(comm[index].inbound[0]);
+  non_block_pipe(comm[index].outbound[0]);
 
   // fork and create new render tab
   pid_t tab_process = fork();
@@ -211,6 +202,7 @@ void new_tab_created_cb (GtkButton *button, gpointer data) {
       char arg1[4];
       char arg2[20];
       sprintf(arg1, "%d", index);
+      printf("index: %d\n", index);
       sprintf(arg2, "%d %d %d %d", comm[index].inbound[0], comm[index].inbound[1], comm[index].outbound[0], comm[index].outbound[1]);
       execl("./render", "render", arg1, arg2, (char*)NULL);
   } else {
@@ -310,7 +302,6 @@ int main(int argc, char **argv)
 
   // init blacklist (see util.h), and favorites (write this, see above)
   
-  printf("Test\n");
   int status;
   pid_t child = fork();
   if (child < 0){
