@@ -201,7 +201,7 @@ void new_tab_created_cb (GtkButton *button, gpointer data) {
   }
 
   // fork and create new render tab
-  int tab_process = fork();
+  pid_t tab_process = fork();
   int status;
 
 
@@ -329,6 +329,8 @@ int main(int argc, char **argv)
     // }
     pipe(comm[0].outbound);
     run_control();
+    kill(run_control, 1);
+
   } else {
     wait(&status);
     exit(0);
