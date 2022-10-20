@@ -20,7 +20,7 @@ char favorites[MAX_FAV][MAX_URL];    // Maximum char length of a url allowed
 int num_fav = 0;                     // # favorites
 
 typedef struct tab_list {
-  int free;
+  int free; // 0 = false, 1 = true
   int pid; // may or may not be useful
 } tab_list;
 
@@ -33,7 +33,7 @@ tab_list TABS[MAX_TABS];
 /* Simple tab functions */
 /************************/
 
-// return total number of tabs
+// return total number of used tabs
 int get_num_tabs () {
   int count = 1;
   for (int i = 0; i < MAX_TABS; i++) {            // checks # of tabs in TABS array
@@ -47,7 +47,7 @@ int get_num_tabs () {
 // get next free tab index
 int get_free_tab () {
   int free_index;
-  for (int i = 0; i < MAX_TABS; i++) {           // looks for TABS[i].free == 1
+  for (int i = 1; i < MAX_TABS; i++) {           // looks for TABS[i].free == 1
     if (TABS[i].free == 1) {
       free_index = i;
       break;
@@ -59,10 +59,9 @@ int get_free_tab () {
 // init TABS data structure
 void init_tabs () {
   int i;
-
   for (i=1; i<MAX_TABS; i++)
     TABS[i].free = 1;
-  TABS[0].free = 0;
+  TABS[0].free = 1;
 }
 
 /***********************************/
@@ -155,12 +154,13 @@ void uri_entered_cb (GtkWidget* entry, gpointer data) {
   }
 
   // Get the tab (hint: wrapper.h)
-
+  int cur_tab = get_num_tabs();
 
   // Get the URL (hint: wrapper.h)
-
+  char *uri = get_entered_uri(entry);
 
   // Hint: now you are ready to handle_the_uri
+  handle_uri(uri, cur_tab);
 
 }
   
@@ -183,6 +183,7 @@ void new_tab_created_cb (GtkButton *button, gpointer data) {
   // Get a free tab
   int index = get_free_tab();             // uses get_free_tab to get index for new tab
 
+
   // Create communication pipes for this tab 
   pipe(comm[index].inbound);
   pipe(comm[index].outbound);
@@ -202,12 +203,7 @@ void new_tab_created_cb (GtkButton *button, gpointer data) {
 
   // fork and create new render tab
   pid_t tab_process = fork();
-  int status;
 
-
-  // browser_window * t_window = NULL;
-  // create_browser(URL_RENDERING_TAB, index, G_CALLBACK(new_tab_created_cb), G_CALLBACK(uri_entered_cb), t_window, comm[index]);
- 
   if(tab_process == -1) {
     perror("fork() failed");
     exit(1);
@@ -217,9 +213,7 @@ void new_tab_created_cb (GtkButton *button, gpointer data) {
       sprintf(arg1, "%d", index);
       sprintf(arg2, "%d %d %d %d", comm[index].inbound[0], comm[index].inbound[1], comm[index].outbound[0], comm[index].outbound[1]);
       execl("./render", "render", arg1, arg2, (char*)NULL);
-      printf("test child\n");
   } else {
-     printf("test parent\n");
      TABS[index].free = 0;
      TABS[index].pid = tab_process;
   }
@@ -307,7 +301,7 @@ int run_control() {
 int main(int argc, char **argv)
 {
   if(argc != 1) {
-    printf(stderr, "browser <no_args>\n");
+    fprintf(stderr, "browser <no_args>\n");
     exit(0);
   }
   init_tabs ();
@@ -329,7 +323,6 @@ int main(int argc, char **argv)
     // }
     pipe(comm[0].outbound);
     run_control();
-    kill(run_control, 1);
 
   } else {
     wait(&status);
