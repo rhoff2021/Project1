@@ -35,7 +35,7 @@ tab_list TABS[MAX_TABS];
 
 // return total number of used tabs
 int get_num_tabs () {
-  int count = 1;
+  int count = 0;
   for (int i = 0; i < MAX_TABS; i++) {            // checks # of tabs in TABS array
     if (TABS[i].free == 0) {
       count++;
@@ -140,8 +140,13 @@ void handle_uri (char *uri, int tab_index) {
       return;
     }
   }
-  printf("in handle, past tests\n");
-  write(comm[tab_index].inbound[1], NEW_URI_ENTERED, sizeof(int));
+  // printf("in handle, past tests\n");
+  req_t req;
+  strcpy(req.uri, uri);
+  req.type = NEW_URI_ENTERED;
+  req.tab_index = tab_index;
+
+  write(comm[tab_index].inbound[1], &req, sizeof(req_t));         // putting a write here, but i don't know how to go about this
 }
 
 
@@ -149,7 +154,6 @@ void handle_uri (char *uri, int tab_index) {
 // If everything checks out, a NEW_URI_ENTERED command is sent (see Hint)
 // Short function
 void uri_entered_cb (GtkWidget* entry, gpointer data) {
-  
   if(data == NULL) {	
     return;
   }
@@ -206,9 +210,9 @@ void new_tab_created_cb (GtkButton *button, gpointer data) {
       char arg1[4];
       char arg2[20];
       sprintf(arg1, "%d", index);
-      printf("index: %d\n", index);
+      // printf("index: %d\n", index);
       sprintf(arg2, "%d %d %d %d", comm[index].inbound[0], comm[index].inbound[1], comm[index].outbound[0], comm[index].outbound[1]);
-      execl("./render", "render", arg1, arg2, (char*)NULL);
+      execl("./render", (char*)"render", arg1, arg2, (char*)NULL);
   } else {
      TABS[index].free = 0;
      TABS[index].pid = tab_process;
