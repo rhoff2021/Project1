@@ -35,7 +35,7 @@ tab_list TABS[MAX_TABS];
 
 // return total number of used tabs
 int get_num_tabs () {
-  int count = 1;
+  int count = 0;
   for (int i = 0; i < MAX_TABS; i++) {            // checks # of tabs in TABS array
     if (TABS[i].free == 0) {
       count++;
