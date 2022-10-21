@@ -140,7 +140,6 @@ void handle_uri (char *uri, int tab_index) {
       return;
     }
   }
-  // printf("in handle, past tests\n");
   req_t req;
   strcpy(req.uri, uri);
   req.type = NEW_URI_ENTERED;
@@ -278,6 +277,7 @@ int run_control() {
 
       // Check that nRead returned something before handling cases
       if(nRead == -1 && errno == EAGAIN) {
+        printf("nRead failed. nRead is: %d\n", nRead);
         break;
       }
 
