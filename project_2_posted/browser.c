@@ -83,7 +83,7 @@ int fav_ok (char *uri) {
 // Add uri to favorites file and update favorites array with the new favorite
 void update_favorites_file (char *uri) {
   FILE *fp = fopen(".favorites", "w+");
-  printf("in update_favs\n");
+
   // Add uri to favorites file
   fprintf(fp, "%s", uri);
   // Update favorites array with the new favorite
@@ -242,9 +242,10 @@ void menu_item_selected_cb (GtkWidget *menu_item, gpointer data) {
   sprintf(uri, "https://%s", basic_uri);
 
   // Get the tab (hint: wrapper.h)
+  int tab_num = query_tab_id_for_request(menu_item, data);
 
   // Hint: now you are ready to handle_the_uri
-
+  handle_uri(uri, tab_num);
   return;
 }
 
