@@ -140,13 +140,14 @@ void handle_uri (char *uri, int tab_index) {
       return;
     }
   }
-  // printf("in handle, past tests\n");
   req_t req;
   strcpy(req.uri, uri);
   req.type = NEW_URI_ENTERED;
   req.tab_index = tab_index;
 
-  write(comm[tab_index].inbound[1], &req, sizeof(req_t));         // putting a write here, but i don't know how to go about this
+
+  // Writes the uri to the tab indicated, for rendering once sent through the pipe
+  write(comm[tab_index].inbound[1], &req, sizeof(req_t));         
 }
 
 
@@ -165,7 +166,6 @@ void uri_entered_cb (GtkWidget* entry, gpointer data) {
   char *uri = get_entered_uri(entry);
   // Hint: now you are ready to handle_the_uri
   handle_uri(uri, cur_tab);
-  // printf("past handle_uri\n");
 }
   
 
@@ -198,17 +198,16 @@ void new_tab_created_cb (GtkButton *button, gpointer data) {
   // fork and create new render tab
   pid_t tab_process = fork();
 
-  if(tab_process == -1) {
+  if(tab_process == -1) { //error checking
     perror("fork() failed");
     exit(1);
-  } else if (tab_process == 0) {
+  } else if (tab_process == 0) { // Child process that runs the newly created tab
       char arg1[4];
       char arg2[20];
       sprintf(arg1, "%d", index);
-      // printf("index: %d\n", index);
       sprintf(arg2, "%d %d %d %d", comm[index].inbound[0], comm[index].inbound[1], comm[index].outbound[0], comm[index].outbound[1]);
       execl("./render", (char*)"render", arg1, arg2, (char*)NULL);
-  } else {
+  } else { // Parent process, updates TABS struct
      TABS[index].free = 0;
      TABS[index].pid = tab_process;
   }
@@ -312,9 +311,6 @@ int main(int argc, char **argv)
     exit(1);
   } else if (child == 0) {
     // child creates a pipe for itself
-    // if(pipe(comm[0].outbound) == -1) {
-    //   perror("error creating child pipe");
-    // }
     pipe(comm[0].outbound);
     run_control();
 
