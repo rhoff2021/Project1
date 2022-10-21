@@ -140,7 +140,8 @@ void handle_uri (char *uri, int tab_index) {
       return;
     }
   }
-  write(comm[tab_index].inbound[1], NEW_URI_ENTERED, sizeof(int));         // putting a write here, but i don't know how to go about this
+  printf("in handle, past tests\n");
+  write(comm[tab_index].inbound[1], NEW_URI_ENTERED, sizeof(int));
 }
 
 
@@ -154,16 +155,16 @@ void uri_entered_cb (GtkWidget* entry, gpointer data) {
   }
 
   // Get the tab (hint: wrapper.h)
-  int cur_tab = get_num_tabs();
+  int tid = query_tab_id_for_request(entry, data);
 
   // Get the URL (hint: wrapper.h)
   char *uri = get_entered_uri(entry);
 
   // Hint: now you are ready to handle_the_uri
-  handle_uri(uri, cur_tab);
-
+  handle_uri(uri, tid);
+  printf("past handle_uri\n");
 }
-  
+
 
 // Called when + tab is hit
 // Check tab limit ... if ok then do some heavy lifting (see comments)
@@ -173,7 +174,6 @@ void new_tab_created_cb (GtkButton *button, gpointer data) {
   if (data == NULL) {
     return;
   }
-  printf("new tab");
   // at tab limit?
   if (get_num_tabs() >= MAX_TABS) {           // counts tabs using get_num_tabs
     alert("MAX TABS REACHED.");
@@ -183,27 +183,22 @@ void new_tab_created_cb (GtkButton *button, gpointer data) {
   // Get a free tab
   int index = get_free_tab();             // uses get_free_tab to get index for new tab
 
-
   // Create communication pipes for this tab 
   pipe(comm[index].inbound);
   pipe(comm[index].outbound);
 
   // Make the read ends non-blocking
-  int inbound_flags;
-  //  = fcntl(comm[index].inbound[0], F_GETFL, 0);
-  // fcntl(comm[index].inbound[0], F_SETFL, inbound_flags | O_NONBLOCK);
-  int outbound_flags; 
-  // = fcntl(comm[index].outbound[0], F_GETFL, 0);
-  // fcntl(comm[index].outbound[0], F_SETFL, outbound_flags | O_NONBLOCK);
-  if ((inbound_flags = non_block_pipe(comm[index].inbound[0]) != 0)){
-    return;
-  } else if ((outbound_flags = non_block_pipe(comm[index].outbound[0])) != 0){
-    return;
-  }
+  non_block_pipe(comm[index].inbound[0]);
+  non_block_pipe(comm[index].outbound[0]);
 
   // fork and create new render tab
   pid_t tab_process = fork();
 
+  // Note: render has different arguments now: tab_index, both pairs of pipe fd's
+  // (inbound then outbound) -- this last argument will be 4 integers "a b c d"
+  // Hint: stringify args
+
+  // Controller parent just does some TABS bookkeeping
   if(tab_process == -1) {
     perror("fork() failed");
     exit(1);
@@ -211,18 +206,14 @@ void new_tab_created_cb (GtkButton *button, gpointer data) {
       char arg1[4];
       char arg2[20];
       sprintf(arg1, "%d", index);
+      printf("index: %d\n", index);
       sprintf(arg2, "%d %d %d %d", comm[index].inbound[0], comm[index].inbound[1], comm[index].outbound[0], comm[index].outbound[1]);
       execl("./render", "render", arg1, arg2, (char*)NULL);
   } else {
      TABS[index].free = 0;
      TABS[index].pid = tab_process;
+     printf("tab process is: %d\n", tab_process);
   }
-
-  // Note: render has different arguments now: tab_index, both pairs of pipe fd's
-  // (inbound then outbound) -- this last argument will be 4 integers "a b c d"
-  // Hint: stringify args
-
-  // Controller parent just does some TABS bookkeeping
 }
 
 // This is called when a favorite is selected for rendering in a tab
