@@ -82,9 +82,12 @@ int fav_ok (char *uri) {
 
 // Add uri to favorites file and update favorites array with the new favorite
 void update_favorites_file (char *uri) {
+  FILE *fp = fopen(".favorites", "w+");
+  printf("in update_favs\n");
   // Add uri to favorites file
-
+  fprintf(fp, "%s", uri);
   // Update favorites array with the new favorite
+  strcpy(favorites[num_fav++], uri);
 }
 
 // Set up favorites array
@@ -160,7 +163,7 @@ void uri_entered_cb (GtkWidget* entry, gpointer data) {
   }
 
   // Get the tab (hint: wrapper.h)
-  int cur_tab = get_num_tabs();
+  int cur_tab = query_tab_id_for_request(entry, data); 
 
   // Get the URL (hint: wrapper.h)
   char *uri = get_entered_uri(entry);
@@ -273,18 +276,28 @@ int run_control() {
     // Loop across all pipes from VALID tabs -- starting from 0
     for (i=0; i<MAX_TABS; i++) {
       if (TABS[i].free) continue;
-      // nRead = read(comm[i].outbound[0], &req, sizeof(req_t));
+      nRead = read(comm[i].outbound[0], &req, sizeof(req_t));
       // if(nRead == -1 && errno == EAGAIN) {
       //   alert("Failed to read outbound pipe");
       // }
 
       // Check that nRead returned something before handling cases
 
-      // Case 1: PLEASE_DIE
-
-      // Case 2: TAB_IS_DEAD
-	    
+      // // Case 1: PLEASE_DIE
+      // if (strcmp(nRead, "PLEASE_DIE") == 0) {
+        
+      // }
+      // // Case 2: TAB_IS_DEAD
+      // if (strcmp(nRead, "TAB_IS_DEAD") == 0) {
+        
+      // }
       // Case 3: IS_FAV
+      if (req.type == 1) {
+        if (fav_ok(req.uri) == 0) {
+          update_favorites_file(req.uri);
+          add_uri_to_favorite_menu(b_window, req.uri);
+        }
+      }
     }
     usleep(1000);
   }
