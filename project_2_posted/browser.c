@@ -61,7 +61,7 @@ void init_tabs () {
   int i;
   for (i=1; i<MAX_TABS; i++)
     TABS[i].free = 1;
-  TABS[0].free = 1;
+  TABS[0].free = 0;
 }
 
 /***********************************/
@@ -211,7 +211,7 @@ void new_tab_created_cb (GtkButton *button, gpointer data) {
       sprintf(arg1, "%d", index);
       // printf("index: %d\n", index);
       sprintf(arg2, "%d %d %d %d", comm[index].inbound[0], comm[index].inbound[1], comm[index].outbound[0], comm[index].outbound[1]);
-      execl("./render", (char*)"render", arg1, arg2, (char*)NULL);
+      execl("./render", (char*) "render", arg1, arg2, (char*) NULL);
   } else {
      TABS[index].free = 0;
      TABS[index].pid = tab_process;
@@ -277,7 +277,7 @@ int run_control() {
 
       // Check that nRead returned something before handling cases
       if(nRead == -1 && errno == EAGAIN) {
-        printf("nRead failed. nRead is: %d\n", nRead);
+      //  printf("nRead failed. nRead is: %d\n", nRead);
         break;
       }
 
@@ -286,7 +286,30 @@ int run_control() {
       // Case 2: TAB_IS_DEAD
 	    
       // Case 3: IS_FAV
-      printf("nRead is: %d", nRead);
+      printf("req.type is: %d\n", req.type);
+      if (req.type == PLEASE_DIE) {
+        printf("PLEASE DIE.\n");
+        
+        
+      } else if (req.type == TAB_IS_DEAD) {
+        
+        printf("TAB IS DEAD.\n");
+        
+        close(comm[i].inbound[0]);
+        close(comm[i].inbound[1]);
+
+        close(comm[i].outbound[0]);
+        close(comm[i].outbound[1]);
+
+        kill(TABS[i].pid, 1);
+        TABS[i].free = 1;
+        
+      } else if (req.type == IS_FAV) {
+        printf("IS FAV.\n");
+      } else {
+        printf("default\n");
+      }
+      printf("i is:%d\n", i);
     }
     usleep(1000);
   }
@@ -317,9 +340,15 @@ int main(int argc, char **argv)
     // if(pipe(comm[0].outbound) == -1) {
     //   perror("error creating child pipe");
     // }
+    //pipe(comm[0].outbound);
+    pipe(comm[0].inbound);
     pipe(comm[0].outbound);
-    run_control();
 
+    non_block_pipe(comm[0].inbound[0]);
+    non_block_pipe(comm[0].outbound[0]);
+    
+    run_control();
+    kill(child, 0);
   } else {
     wait(&status);
     exit(0);
