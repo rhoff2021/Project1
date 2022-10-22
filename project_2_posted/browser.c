@@ -11,7 +11,7 @@
 #define MAX_TABS 100  // this gives us 99 tabs, 0 is reserved for the controller
 #define MAX_BAD 1000
 #define MAX_URL 100
-#define MAX_FAV 100
+#define MAX_FAV 3
 #define MAX_LABELS 100
 
 
@@ -73,7 +73,7 @@ void init_tabs () {
 int fav_ok (char *uri) {
   if (on_favorites(uri)) {      // check if on favorites list (using util.h function)
     return -1;
-  } else if (num_fav+1 == MAX_FAV){ // check if we reach MAX_FAV
+  } else if (num_fav == MAX_FAV){ // check if we reach MAX_FAV
     return -1;
   }
   return 0;
