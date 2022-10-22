@@ -11,7 +11,7 @@
 #define MAX_TABS 100  // this gives us 99 tabs, 0 is reserved for the controller
 #define MAX_BAD 1000
 #define MAX_URL 100
-#define MAX_FAV 100
+#define MAX_FAV 3
 #define MAX_LABELS 100
 
 
@@ -73,7 +73,7 @@ void init_tabs () {
 int fav_ok (char *uri) {
   if (on_favorites(uri)) {      // check if on favorites list (using util.h function)
     return -1;
-  } else if (num_fav+1 == MAX_FAV){ // check if we reach MAX_FAV
+  } else if (num_fav == MAX_FAV){ // check if we reach MAX_FAV
     return -1;
   }
   return 0;
@@ -82,9 +82,12 @@ int fav_ok (char *uri) {
 
 // Add uri to favorites file and update favorites array with the new favorite
 void update_favorites_file (char *uri) {
-  // Add uri to favorites file
+  FILE *fp = fopen(".favorites", "w+");
 
+  // Add uri to favorites file
+  fprintf(fp, "%s", uri);
   // Update favorites array with the new favorite
+  strcpy(favorites[num_fav++], uri);
 }
 
 // Set up favorites array
@@ -145,7 +148,9 @@ void handle_uri (char *uri, int tab_index) {
   req.type = NEW_URI_ENTERED;
   req.tab_index = tab_index;
 
-  write(comm[tab_index].inbound[1], &req, sizeof(req_t));         // putting a write here, but i don't know how to go about this
+
+  // Writes the uri to the tab indicated, for rendering once sent through the pipe
+  write(comm[tab_index].inbound[1], &req, sizeof(req_t));         
 }
 
 
@@ -202,17 +207,16 @@ void new_tab_created_cb (GtkButton *button, gpointer data) {
   // Hint: stringify args
 
   // Controller parent just does some TABS bookkeeping
-  if(tab_process == -1) {
+  if(tab_process == -1) { //error checking
     perror("fork() failed");
     exit(1);
-  } else if (tab_process == 0) {
+  } else if (tab_process == 0) { // Child process that runs the newly created tab
       char arg1[4];
       char arg2[20];
       sprintf(arg1, "%d", index);
-      // printf("index: %d\n", index);
       sprintf(arg2, "%d %d %d %d", comm[index].inbound[0], comm[index].inbound[1], comm[index].outbound[0], comm[index].outbound[1]);
       execl("./render", (char*) "render", arg1, arg2, (char*) NULL);
-  } else {
+  } else { // Parent process, updates TABS struct
      TABS[index].free = 0;
      TABS[index].pid = tab_process;
      printf("tab process is: %d\n", tab_process);
@@ -239,9 +243,10 @@ void menu_item_selected_cb (GtkWidget *menu_item, gpointer data) {
   sprintf(uri, "https://%s", basic_uri);
 
   // Get the tab (hint: wrapper.h)
+  int tab_num = query_tab_id_for_request(menu_item, data);
 
   // Hint: now you are ready to handle_the_uri
-
+  handle_uri(uri, tab_num);
   return;
 }
 
@@ -277,14 +282,17 @@ int run_control() {
 
       // Check that nRead returned something before handling cases
       if(nRead == -1 && errno == EAGAIN) {
-      //  printf("nRead failed. nRead is: %d\n", nRead);
         break;
       }
 
-      // Case 1: PLEASE_DIE
-
-      // Case 2: TAB_IS_DEAD
-	    
+      // // Case 1: PLEASE_DIE
+      // if (strcmp(nRead, "PLEASE_DIE") == 0) {
+        
+      // }
+      // // Case 2: TAB_IS_DEAD
+      // if (strcmp(nRead, "TAB_IS_DEAD") == 0) {
+        
+      // }
       // Case 3: IS_FAV
       printf("req.type is: %d\n", req.type);
       if (req.type == PLEASE_DIE) {
@@ -310,6 +318,12 @@ int run_control() {
         printf("default\n");
       }
       printf("i is:%d\n", i);
+      if (req.type == 1) {
+        if (fav_ok(req.uri) == 0) {
+          update_favorites_file(req.uri);
+          add_uri_to_favorite_menu(b_window, req.uri);
+        }
+      }
     }
     usleep(1000);
   }
