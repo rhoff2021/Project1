@@ -1,3 +1,8 @@
+/* CSCI-4061 Fall 2022 – Project #2
+ * Group Member #1: Rebecca Hoff hoff1542
+ * Group Member #2: Ji Moua moua0345
+ * Group Member #3: Aidan Boyle boyle181 */
+
 #include "wrapper.h"
 #include "util.h"
 #include <sys/types.h>
@@ -10,7 +15,7 @@
 
 #define MAX_TABS 100  // this gives us 99 tabs, 0 is reserved for the controller
 #define MAX_URL 100
-#define MAX_FAV 100
+#define MAX_FAV 2
 #define MAX_LABELS 100
 
 
@@ -71,8 +76,10 @@ void init_tabs () {
 // both max limit, already a favorite (Hint: see util.h) return -1
 int fav_ok (char *uri) {
   if (on_favorites(uri)) {      // check if on favorites list (using util.h function)
+    alert("Fav exists");
     return -1;
   } else if (num_fav == MAX_FAV){ // check if we reach MAX_FAV
+    alert("Max fav reached");
     return -1;
   }
   return 0;
@@ -100,7 +107,6 @@ void init_favorites (char *fname) {
   } else {
     while (fgets(buf, MAX_URL, fp) != NULL) {         // fgets to make favorites array
       strtok(buf, "\n\r");
-      
       if (count == MAX_FAV) {         //check if favorites array is full
         break;
       } else {
@@ -142,11 +148,16 @@ void handle_uri (char *uri, int tab_index) {
       return;
     }
   }
+
+  if(TABS[tab_index].pid == 0) { // checks if tab exists
+    alert("Bad tab");
+    return;
+  }
+
   req_t req;
   strcpy(req.uri, uri);
   req.type = NEW_URI_ENTERED;
   req.tab_index = tab_index;
-
 
   // Writes the uri to the tab indicated, for rendering once sent through the pipe
   write(comm[tab_index].inbound[1], &req, sizeof(req_t));         
@@ -169,7 +180,6 @@ void uri_entered_cb (GtkWidget* entry, gpointer data) {
 
   // Hint: now you are ready to handle_the_uri
   handle_uri(uri, tid);
-  printf("past handle_uri\n");
 }
 
 
@@ -186,13 +196,14 @@ void new_tab_created_cb (GtkButton *button, gpointer data) {
     alert("MAX TABS REACHED.");
     return;
   }
-
   // Get a free tab
   int index = get_free_tab();             // uses get_free_tab to get index for new tab
-
   // Create communication pipes for this tab 
-  pipe(comm[index].inbound);
-  pipe(comm[index].outbound);
+
+  if (pipe(comm[index].inbound) == -1 || pipe(comm[index].outbound) == -1) {
+    perror("pipe error");
+    exit(1);
+  }
 
   // Make the read ends non-blocking
   non_block_pipe(comm[index].inbound[0]);
@@ -214,12 +225,10 @@ void new_tab_created_cb (GtkButton *button, gpointer data) {
       char arg2[20];
       sprintf(arg1, "%d", index);
       sprintf(arg2, "%d %d %d %d", comm[index].inbound[0], comm[index].inbound[1], comm[index].outbound[0], comm[index].outbound[1]);
-      
       execl("./render", (char*) "render", arg1, arg2, (char*) NULL);
   } else { // Parent process, updates TABS struct
      TABS[index].free = 0;
      TABS[index].pid = tab_process;
-     printf("tab [%d] process is: %d\n", index, tab_process);
   }
 }
 
@@ -229,7 +238,6 @@ void new_tab_created_cb (GtkButton *button, gpointer data) {
 // as favorites strip this off for a nicer looking menu
 // Short
 void menu_item_selected_cb (GtkWidget *menu_item, gpointer data) {
-
   if (data == NULL) {
     return;
   }
@@ -267,16 +275,9 @@ int run_control() {
   
   while (1) {
     process_single_gtk_event();
-
-    // Read from all tab pipes including private pipe (index 0)
-    // to handle commands:
-    // PLEASE_DIE (controller should die, self-sent): send PLEASE_DIE to all tabs
-    // From any tab:
-    //    IS_FAV: add uri to favorite menu (Hint: see wrapper.h), and update .favorites
-    //    TAB_IS_DEAD: tab has exited, what should you do?
-
     // Loop across all pipes from VALID tabs -- starting from 0
     for (i=0; i<MAX_TABS; i++) {
+      // Read from all tab pipes including private pipe (index 0)
       if (TABS[i].free) continue;
       nRead = read(comm[i].outbound[0], &req, sizeof(req_t));  
 
@@ -284,49 +285,49 @@ int run_control() {
       if(nRead == -1 && errno == EAGAIN) continue;
 
       // // Case 1: PLEASE_DIE
-      if (req.type == PLEASE_DIE) {
-        //printf("PLEASE DIE\n");
+      if (req.type == PLEASE_DIE) {     
+
         if (i == 0) {
           req_t PD_req;
           PD_req.type = PLEASE_DIE;
-
+          // PLEASE_DIE (controller should die, self-sent): send PLEASE_DIE to all tabs
           for (int j=1; j<MAX_TABS; j++) {
             if (TABS[j].free) continue;
             strcpy(PD_req.uri, req.uri);
             PD_req.tab_index = j;
             write(comm[j].inbound[1], &PD_req, sizeof(req_t));
           }
-          wait(NULL);
+          if(wait(NULL) == -1){
+            perror("wait error");
+          }
           exit(1);
         }
-
         close(comm[i].outbound[0]);
         close(comm[i].inbound[1]);
       }
       
       // // Case 2: TAB_IS_DEAD
-      if (req.type == TAB_IS_DEAD) {
-        //printf("TAB IS DEAD.\n");
+      if (req.type == TAB_IS_DEAD) {   // TAB_IS_DEAD: tab has exited
         req_t TID_req;
         TID_req.type = PLEASE_DIE;
         TID_req.tab_index = i;
         strcpy(TID_req.uri,req.uri);
         
         close(comm[i].outbound[0]);
-        write(comm[i].inbound[1], &TID_req, sizeof(req_t));
+        write(comm[i].inbound[1], &TID_req, sizeof(req_t)); // sends PLEASE_DIE to current tab, and kills tab process
         close(comm[i].inbound[1]);
-
         TABS[i].free = 1;
+        TABS[i].pid = 0;
       }
+
 
       // Case 3: IS_FAV
       if (req.type == 1) {
         if (fav_ok(req.uri) == 0) {
-          update_favorites_file(req.uri);
-          add_uri_to_favorite_menu(b_window, req.uri);
+          update_favorites_file(req.uri);  
+          add_uri_to_favorite_menu(b_window, req.uri); // updates .favorites
         }
       }
-
     }
     usleep(1000);
   }
@@ -346,7 +347,6 @@ int main(int argc, char **argv)
 
   // init blacklist (see util.h), and favorites (write this, see above)
   
-  printf("Test\n");
   int status;
   pid_t child = fork();
   if (child < 0){
@@ -354,18 +354,21 @@ int main(int argc, char **argv)
     exit(1);
   } else if (child == 0) {
     // child creates a pipe for itself
-    //printf("child is: %d\n", getpid());
     pipe(comm[0].inbound);
     pipe(comm[0].outbound);
+    if(pipe(comm[0].outbound) == -1 || pipe(comm[0].inbound) == -1){
+      perror("pipe error");
+      exit(1);
+    }
 
     non_block_pipe(comm[0].inbound[0]);
     non_block_pipe(comm[0].outbound[0]);
     
     run_control();
-    // kill(child, 0);
   } else {
-    //printf("parent is: %d\n", getpid());
-    wait(&status);
+    if(wait(&status) == -1){
+      perror("wait error");
+    }
     exit(0);
   }
   // Fork controller
