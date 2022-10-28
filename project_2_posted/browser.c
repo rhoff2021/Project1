@@ -354,7 +354,7 @@ int main(int argc, char **argv)
     exit(1);
   } else if (child == 0) {
     // child creates a pipe for itself
-    printf("child is: %d\n", getpid());
+    //printf("child is: %d\n", getpid());
     pipe(comm[0].inbound);
     pipe(comm[0].outbound);
 
@@ -364,7 +364,7 @@ int main(int argc, char **argv)
     run_control();
     // kill(child, 0);
   } else {
-    printf("parent is: %d\n", getpid());
+    //printf("parent is: %d\n", getpid());
     wait(&status);
     exit(0);
   }
