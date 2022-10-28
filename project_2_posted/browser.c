@@ -15,7 +15,7 @@
 
 #define MAX_TABS 100  // this gives us 99 tabs, 0 is reserved for the controller
 #define MAX_URL 100
-#define MAX_FAV 2
+#define MAX_FAV 100
 #define MAX_LABELS 100
 
 
