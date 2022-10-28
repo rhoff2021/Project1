@@ -9,9 +9,8 @@
 #include <signal.h>
 
 #define MAX_TABS 100  // this gives us 99 tabs, 0 is reserved for the controller
-//#define MAX_BAD 100
 #define MAX_URL 100
-#define MAX_FAV 3
+#define MAX_FAV 100
 #define MAX_LABELS 100
 
 
@@ -183,7 +182,7 @@ void new_tab_created_cb (GtkButton *button, gpointer data) {
     return;
   }
   // at tab limit?
-  if (get_num_tabs() + 1 >= MAX_TABS) {           // counts tabs using get_num_tabs
+  if (get_num_tabs() >= MAX_TABS) {           // counts tabs using get_num_tabs
     alert("MAX TABS REACHED.");
     return;
   }
@@ -284,38 +283,39 @@ int run_control() {
       // Check that nRead returned something before handling cases
       if(nRead == -1 && errno == EAGAIN) continue;
 
-      //printf("i is: %d and req_type: %d\n", i, req.type);
-
-
       // // Case 1: PLEASE_DIE
       if (req.type == PLEASE_DIE) {
-        printf("PLEASE DIE.\n");
+        //printf("PLEASE DIE\n");
+        if (i == 0) {
+          req_t PD_req;
+          PD_req.type = PLEASE_DIE;
 
-        //close(comm[i].inbound[0]);
-        //close(comm[i].inbound[1]);
+          for (int j=1; j<MAX_TABS; j++) {
+            if (TABS[j].free) continue;
+            strcpy(PD_req.uri, req.uri);
+            PD_req.tab_index = j;
+            write(comm[j].inbound[1], &PD_req, sizeof(req_t));
+          }
+          wait(NULL);
+          exit(1);
+        }
 
-        //close(comm[i].outbound[0]);
-        close(comm[i].outbound[1]);
-
-        //req_t PD_req;
-        //strcpy(PD_req.uri, req.uri);
-        //PD_req.type = PLEASE_DIE;
-        //PD_req.tab_index = i;
-
-        //write(comm[i].inbound[1], &PD_req, sizeof(req_t));
+        close(comm[i].outbound[0]);
+        close(comm[i].inbound[1]);
       }
       
       // // Case 2: TAB_IS_DEAD
       if (req.type == TAB_IS_DEAD) {
         //printf("TAB IS DEAD.\n");
-
-        close(comm[i].inbound[0]);
+        req_t TID_req;
+        TID_req.type = PLEASE_DIE;
+        TID_req.tab_index = i;
+        strcpy(TID_req.uri,req.uri);
+        
+        close(comm[i].outbound[0]);
+        write(comm[i].inbound[1], &TID_req, sizeof(req_t));
         close(comm[i].inbound[1]);
 
-        close(comm[i].outbound[0]);
-        close(comm[i].outbound[1]);
-
-        //printf("TID: %d\n", TABS[i].pid);
         TABS[i].free = 1;
       }
 
@@ -347,13 +347,14 @@ int main(int argc, char **argv)
   // init blacklist (see util.h), and favorites (write this, see above)
   
   printf("Test\n");
-  //int status;
+  int status;
   pid_t child = fork();
   if (child < 0){
     perror("fork() failed");
     exit(1);
   } else if (child == 0) {
     // child creates a pipe for itself
+    printf("child is: %d\n", getpid());
     pipe(comm[0].inbound);
     pipe(comm[0].outbound);
 
@@ -361,11 +362,10 @@ int main(int argc, char **argv)
     non_block_pipe(comm[0].outbound[0]);
     
     run_control();
-    printf("out of run_control\n");
-    kill(child, 0);
+    // kill(child, 0);
   } else {
-    wait(NULL);
-    printf("Done\n");
+    printf("parent is: %d\n", getpid());
+    wait(&status);
     exit(0);
   }
   // Fork controller
