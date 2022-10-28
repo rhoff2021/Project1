@@ -285,13 +285,18 @@ int run_control() {
 
       // Case 1: PLEASE_DIE
       if (req.type == 3) {
-        for (int j = 0; j<MAX_TABS; j++) {
-          close(comm[j].outbound[0]);
-          write(comm[j].inbound[1], kill(TABS[i].pid, 1), sizeof(req_t));
-          close(comm[j].inbound[1]);
+        if (i = 0) {
+          for (int j = 0; j<MAX_TABS; j++) {
+            if (TABS[j].free) continue;
+            write(comm[j].inbound[1], PLEASE_DIE, sizeof(req_t));
+          }
+        } else {
+          close(comm[i].outbound[0]);
+          write(comm[i].inbound[1], kill(TABS[i].pid, 1), sizeof(req_t));
+          close(comm[i].inbound[1]);
           TABS[i].free = 1;
-        }
-        return;
+        }        
+
       }
       // Case 2: TAB_IS_DEAD
       if (req.type == 2) {
