@@ -281,21 +281,23 @@ int run_control() {
       if(nRead == -1 && errno == EAGAIN) {
         continue;
       }
-
       // Check that nRead returned something before handling cases
 
       // Case 1: PLEASE_DIE
       if (req.type == 3) {
-        close(comm[i].outbound);
-        write(comm[i].inbound[1], PLEASE_DIE, sizeof(req_t));
-        close(comm[i].inbound);
-        TABS[i].free = 1;
+        for (int j = 0; j<MAX_TABS; j++) {
+          close(comm[j].outbound[0]);
+          write(comm[j].inbound[1], kill(TABS[i].pid, 1), sizeof(req_t));
+          close(comm[j].inbound[1]);
+          TABS[i].free = 1;
+        }
+        return;
       }
       // Case 2: TAB_IS_DEAD
       if (req.type == 2) {
-        close(comm[i].outbound);
+        close(comm[i].outbound[0]);
         write(comm[i].inbound[1], kill(TABS[i].pid, 1), sizeof(req_t));
-        close(comm[i].inbound);
+        close(comm[i].inbound[1]);
         TABS[i].free = 1;
         
       }
@@ -333,6 +335,8 @@ int main(int argc, char **argv)
   } else if (child == 0) {
     // child creates a pipe for itself
     pipe(comm[0].outbound);
+    non_block_pipe(comm[0].outbound[0]);
+    TABS[0].free = 0;
     run_control();
 
   } else {
