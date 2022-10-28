@@ -181,7 +181,7 @@ void new_tab_created_cb (GtkButton *button, gpointer data) {
     return;
   }
   // at tab limit?
-  if (get_num_tabs() >= MAX_TABS) {           // counts tabs using get_num_tabs
+  if (get_num_tabs()+1 >= MAX_TABS) {           // counts tabs using get_num_tabs
     alert("MAX TABS REACHED.");
     return;
   }
@@ -278,20 +278,27 @@ int run_control() {
     for (i=0; i<MAX_TABS; i++) {
       if (TABS[i].free) continue;
       nRead = read(comm[i].outbound[0], &req, sizeof(req_t));
-      // if(nRead == -1 && errno == EAGAIN) {
-      //   alert("Failed to read outbound pipe");
-      // }
+      if(nRead == -1 && errno == EAGAIN) {
+        continue;
+      }
 
       // Check that nRead returned something before handling cases
 
-      // // Case 1: PLEASE_DIE
-      // if (strcmp(nRead, "PLEASE_DIE") == 0) {
+      // Case 1: PLEASE_DIE
+      if (req.type == 3) {
+        close(comm[i].outbound);
+        write(comm[i].inbound[1], PLEASE_DIE, sizeof(req_t));
+        close(comm[i].inbound);
+        TABS[i].free = 1;
+      }
+      // Case 2: TAB_IS_DEAD
+      if (req.type == 2) {
+        close(comm[i].outbound);
+        write(comm[i].inbound[1], kill(TABS[i].pid, 1), sizeof(req_t));
+        close(comm[i].inbound);
+        TABS[i].free = 1;
         
-      // }
-      // // Case 2: TAB_IS_DEAD
-      // if (strcmp(nRead, "TAB_IS_DEAD") == 0) {
-        
-      // }
+      }
       // Case 3: IS_FAV
       if (req.type == 1) {
         if (fav_ok(req.uri) == 0) {
