@@ -9,7 +9,7 @@
 #include <signal.h>
 
 #define MAX_TABS 100  // this gives us 99 tabs, 0 is reserved for the controller
-#define MAX_BAD 1000
+//#define MAX_BAD 100
 #define MAX_URL 100
 #define MAX_FAV 3
 #define MAX_LABELS 100
@@ -183,7 +183,7 @@ void new_tab_created_cb (GtkButton *button, gpointer data) {
     return;
   }
   // at tab limit?
-  if (get_num_tabs() >= MAX_TABS) {           // counts tabs using get_num_tabs
+  if (get_num_tabs() + 1 >= MAX_TABS) {           // counts tabs using get_num_tabs
     alert("MAX TABS REACHED.");
     return;
   }
@@ -215,11 +215,12 @@ void new_tab_created_cb (GtkButton *button, gpointer data) {
       char arg2[20];
       sprintf(arg1, "%d", index);
       sprintf(arg2, "%d %d %d %d", comm[index].inbound[0], comm[index].inbound[1], comm[index].outbound[0], comm[index].outbound[1]);
+      
       execl("./render", (char*) "render", arg1, arg2, (char*) NULL);
   } else { // Parent process, updates TABS struct
      TABS[index].free = 0;
      TABS[index].pid = tab_process;
-     printf("tab process is: %d\n", tab_process);
+     printf("tab [%d] process is: %d\n", index, tab_process);
   }
 }
 
@@ -281,49 +282,51 @@ int run_control() {
       nRead = read(comm[i].outbound[0], &req, sizeof(req_t));  
 
       // Check that nRead returned something before handling cases
-      if(nRead == -1 && errno == EAGAIN) {
-        break;
-      }
+      if(nRead == -1 && errno == EAGAIN) continue;
+
+      //printf("i is: %d and req_type: %d\n", i, req.type);
+
 
       // // Case 1: PLEASE_DIE
-      // if (strcmp(nRead, "PLEASE_DIE") == 0) {
-        
-      // }
-      // // Case 2: TAB_IS_DEAD
-      // if (strcmp(nRead, "TAB_IS_DEAD") == 0) {
-        
-      // }
-      // Case 3: IS_FAV
-      printf("req.type is: %d\n", req.type);
       if (req.type == PLEASE_DIE) {
         printf("PLEASE DIE.\n");
-        
-        
-      } else if (req.type == TAB_IS_DEAD) {
-        
-        printf("TAB IS DEAD.\n");
-        
+
+        //close(comm[i].inbound[0]);
+        //close(comm[i].inbound[1]);
+
+        //close(comm[i].outbound[0]);
+        close(comm[i].outbound[1]);
+
+        //req_t PD_req;
+        //strcpy(PD_req.uri, req.uri);
+        //PD_req.type = PLEASE_DIE;
+        //PD_req.tab_index = i;
+
+        //write(comm[i].inbound[1], &PD_req, sizeof(req_t));
+      }
+      
+      // // Case 2: TAB_IS_DEAD
+      if (req.type == TAB_IS_DEAD) {
+        //printf("TAB IS DEAD.\n");
+
         close(comm[i].inbound[0]);
         close(comm[i].inbound[1]);
 
         close(comm[i].outbound[0]);
         close(comm[i].outbound[1]);
 
-        kill(TABS[i].pid, 1);
+        //printf("TID: %d\n", TABS[i].pid);
         TABS[i].free = 1;
-        
-      } else if (req.type == IS_FAV) {
-        printf("IS FAV.\n");
-      } else {
-        printf("default\n");
       }
-      printf("i is:%d\n", i);
+
+      // Case 3: IS_FAV
       if (req.type == 1) {
         if (fav_ok(req.uri) == 0) {
           update_favorites_file(req.uri);
           add_uri_to_favorite_menu(b_window, req.uri);
         }
       }
+
     }
     usleep(1000);
   }
@@ -344,17 +347,13 @@ int main(int argc, char **argv)
   // init blacklist (see util.h), and favorites (write this, see above)
   
   printf("Test\n");
-  int status;
+  //int status;
   pid_t child = fork();
   if (child < 0){
     perror("fork() failed");
     exit(1);
   } else if (child == 0) {
     // child creates a pipe for itself
-    // if(pipe(comm[0].outbound) == -1) {
-    //   perror("error creating child pipe");
-    // }
-    //pipe(comm[0].outbound);
     pipe(comm[0].inbound);
     pipe(comm[0].outbound);
 
@@ -362,9 +361,11 @@ int main(int argc, char **argv)
     non_block_pipe(comm[0].outbound[0]);
     
     run_control();
+    printf("out of run_control\n");
     kill(child, 0);
   } else {
-    wait(&status);
+    wait(NULL);
+    printf("Done\n");
     exit(0);
   }
   // Fork controller
