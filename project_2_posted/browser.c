@@ -354,8 +354,6 @@ int main(int argc, char **argv)
     exit(1);
   } else if (child == 0) {
     // child creates a pipe for itself
-    pipe(comm[0].inbound);
-    pipe(comm[0].outbound);
     if(pipe(comm[0].outbound) == -1 || pipe(comm[0].inbound) == -1){
       perror("pipe error");
       exit(1);
