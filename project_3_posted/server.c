@@ -273,6 +273,12 @@ int main(int argc, char **argv) {
   /* TODO (A.I)
   *    Description:      Get the input args --> (1) port (2) path (3) num_dispatcher (4) num_workers  (5) queue_length (6) cache_size
   */
+  port = argc[1];
+  path[PATH_MAX] = argc[2];
+  num_dispatcher = argc[3];
+  num_workers = argc[4];
+  queue_length = argc[5];
+  cache_size = argc[6];
 
 
 
@@ -282,6 +288,20 @@ int main(int argc, char **argv) {
   *                     (3) num_dispatcher: {Should be >= 1 and <= MAX_THREADS} | (4) num_workers: {Should be >= 1 and <= MAX_THREADS}
   *                     (5) queue_length: {Should be >= 1 and <= MAX_QUEUE_LEN} | (6) cache_size: {Should be >= 1 and <= MAX_CE}
   */
+  
+  if (port < MIN_PORT || port > MAX_PORT) {
+    return -1;
+  // } else if (path ) {     // idk what to do
+    // return -1;
+  } else if (num_dispatcher < 1 || num_dispatcher > MAX_THREADS) {
+    return -1;
+  } else if (num_workers < 1 || num_workers > MAX_THREADS) {
+    return -1;
+  } else if (queue_length < 1 || queue_length > MAX_QUEUE_LEN) {
+    return -1;
+  } else if (cache_size < 1 cache_size > MAX_CE) {
+    return -1;
+  }
  
 
 
