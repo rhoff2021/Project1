@@ -126,6 +126,8 @@ void * dispatch(void *arg) {
   *    Description:      Get the id as an input argument from arg, set it to ID
   */
 
+  
+
 
   while (1) {
 
@@ -136,6 +138,12 @@ void * dispatch(void *arg) {
     *    Hint:             Helpful Functions: int accept_connection(void) | int get_request(int fd, char *filename
     *                      Recommend using the request_t structure from server.h to store the request. (Refer section 15 on the project write up)
     */
+   
+   int fd = accept_connection();
+
+   if(fd > 0) {
+       get_request(fd, req_entries->request);
+   }
 
 
 
@@ -146,6 +154,7 @@ void * dispatch(void *arg) {
 
 
 
+
     /* TODO (B.III)
     *    Description:      Get request from the client
     *    Utility Function: int get_request(int fd, char *filename); //utils.h => Line 41
@@ -153,7 +162,7 @@ void * dispatch(void *arg) {
 
 
 
-    //fprintf(stderr, "Dispatcher Received Request: fd[%d] request[%s]\n", tempreq.fd, tempreq.request);
+    // fprintf(stderr, "Dispatcher Received Request: fd[%d] request[%s]\n", tempreq.fd, tempreq.request);
     /* TODO (B.IV)
     *    Description:      Add the request into the queue
     */
@@ -201,6 +210,8 @@ void * worker(void *arg) {
   /* TODO (C.I)
   *    Description:      Get the id as an input argument from arg, set it to ID
   */
+  // threadID[workerIndex] = arg;
+
 
 
   while (1) {
@@ -212,7 +223,7 @@ void * worker(void *arg) {
           //(2) While the request queue is empty conditionally wait for the request queue lock once the not empty signal is raised
 
           //(3) Now that you have the lock AND the queue is not empty, read from the request queue
-
+          
           //(4) Update the request queue remove index in a circular fashion
 
           //(5) Check for a path with only a "/" if that is the case add index.html to it
@@ -253,7 +264,7 @@ void * worker(void *arg) {
 
 int main(int argc, char **argv) {
 
-  /********************* Dreturn resulfO NOT REMOVE SECTION - TOP     *********************/
+  /********************* DO NOT REMOVE SECTION - TOP     *********************/
   // Error check on number of arguments
   if(argc != 7){
     printf("usage: %s port path num_dispatcher num_workers queue_length cache_size\n", argv[0]);
@@ -262,7 +273,7 @@ int main(int argc, char **argv) {
 
 
   int port            = -1;
-  char path[PATH_MAX] = "no path set\0";
+  char path[BUFF_SIZE] = "no path set\0";
   num_dispatcher      = -1;                               //global variable
   num_worker          = -1;                               //global variable
   queue_len           = -1;                               //global variable
@@ -273,12 +284,12 @@ int main(int argc, char **argv) {
   /* TODO (A.I)
   *    Description:      Get the input args --> (1) port (2) path (3) num_dispatcher (4) num_workers  (5) queue_length (6) cache_size
   */
-  port = argc[1];
-  path[PATH_MAX] = argc[2];
-  num_dispatcher = argc[3];
-  num_workers = argc[4];
-  queue_length = argc[5];
-  cache_size = argc[6];
+  port = atoi(argv[1]);
+  strcpy(path,argv[2]);
+  num_dispatcher = atoi(argv[3]);
+  num_worker = atoi(argv[4]);
+  queue_len = atoi(argv[5]);
+  cache_len = atoi(argv[6]);
 
 
 
@@ -295,11 +306,11 @@ int main(int argc, char **argv) {
     // return -1;
   } else if (num_dispatcher < 1 || num_dispatcher > MAX_THREADS) {
     return -1;
-  } else if (num_workers < 1 || num_workers > MAX_THREADS) {
+  } else if (num_worker < 1 || num_worker > MAX_THREADS) {
     return -1;
-  } else if (queue_length < 1 || queue_length > MAX_QUEUE_LEN) {
+  } else if (queue_len < 1 || queue_len > MAX_QUEUE_LEN) {
     return -1;
-  } else if (cache_size < 1 cache_size > MAX_CE) {
+  } else if (cache_len < 1 || cache_len > MAX_CE) {
     return -1;
   }
  
@@ -320,6 +331,7 @@ int main(int argc, char **argv) {
   *    Description:      Open log file
   *    Hint:             Use Global "File* logfile", use "web_server_log" as the name, what open flags do you want?
   */
+  logfile = fopen("web_server_log", "r+");
 
 
 
@@ -327,6 +339,7 @@ int main(int argc, char **argv) {
   *    Description:      Change the current working directory to server root directory
   *    Hint:             Check for error!
   */
+  chdir(path);
 
 
 
@@ -334,13 +347,14 @@ int main(int argc, char **argv) {
   *    Description:      Initialize cache  
   *    Local Function:   void    initCache();
   */
-
+  initCache();
 
 
   /* TODO (A.VI)
   *    Description:      Start the server
   *    Utility Function: void init(int port); //look in utils.h 
   */
+  init(port);
 
 
 
@@ -350,6 +364,30 @@ int main(int argc, char **argv) {
   *                      You will want to initialize some kind of global array to pass in thread ID's
   *                      How should you track this p_thread so you can terminate it later? [global]
   */
+
+  int dispatch_args[num_dispatcher];
+  int worker_args[num_dispatcher];
+
+  for (int i = 0; i < MAX_THREADS; i++) {
+      dispatch_args[i] = i;
+      worker_args[i] = i;
+  }
+
+  // creating dispatcher threads
+  for(int i = 0; i < num_dispatcher; i++) {
+    if(pthread_create(&dispatcher_thread[i], NULL, dispatch, (void*) &dispatch_args[i]) != 0) {
+      fprintf(stderr,"Error creating dispatcher thread\n");
+		  exit(1);
+    }
+  }
+
+  // creating worker threads
+  for(int i = 0; i < num_worker; i++) {
+    if(pthread_create(&worker_thread[i], NULL, worker, (void*) &worker_args[i]) != 0) {
+      fprintf(stderr,"Error creating worker thread\n");
+      exit(1);
+    }
+  }
 
 
   // Wait for each of the threads to complete their work
