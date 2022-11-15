@@ -88,17 +88,19 @@ int fav_ok (char *uri) {
 
 // Add uri to favorites file and update favorites array with the new favorite
 void update_favorites_file (char *uri) {
-  FILE *fp = fopen(".favorites", "w+");
+  FILE *fp = fopen(".favorites", "r+"); // change to r+
 
   // Add uri to favorites file
   fprintf(fp, "%s", uri);
   // Update favorites array with the new favorite
   strcpy(favorites[num_fav++], uri);
+  fclose(fp); // added close file
+
 }
 
 // Set up favorites array
 void init_favorites (char *fname) {
-  FILE *fp = fopen(fname, "w+");
+  FILE *fp = fopen(fname, "r+"); // change to r+
   char buf[MAX_URL];
   int count = 0;
 
@@ -296,10 +298,11 @@ int run_control() {
             strcpy(PD_req.uri, req.uri);
             PD_req.tab_index = j;
             write(comm[j].inbound[1], &PD_req, sizeof(req_t));
+            if(wait(NULL) == -1){ // moved inside index for loop
+              perror("wait error");
+            }
           }
-          if(wait(NULL) == -1){
-            perror("wait error");
-          }
+  
           exit(1);
         }
         close(comm[i].outbound[0]);
@@ -312,8 +315,8 @@ int run_control() {
         TID_req.type = PLEASE_DIE;
         TID_req.tab_index = i;
         strcpy(TID_req.uri,req.uri);
-        
         close(comm[i].outbound[0]);
+        wait(NULL); // added wait
         write(comm[i].inbound[1], &TID_req, sizeof(req_t)); // sends PLEASE_DIE to current tab, and kills tab process
         close(comm[i].inbound[1]);
         TABS[i].free = 1;
