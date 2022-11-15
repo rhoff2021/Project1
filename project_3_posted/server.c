@@ -24,8 +24,8 @@ int threadID[MAX_THREADS];                      //[multiple funct]  --> Might be
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;        //What kind of locks will you need to make everything thread safe? [Hint you need multiple]
 pthread_mutex_t log_lock = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t some_content = PTHREAD_COND_INITIALIZER;  //What kind of CVs will you need  (i.e. queue full, queue empty) [Hint you need multiple]
-pthread_cond_t free_space = PTHREAD_COND_INITIALIZER;
+pthread_cond_t queue_not_empty = PTHREAD_COND_INITIALIZER;  //What kind of CVs will you need  (i.e. queue full, queue empty) [Hint you need multiple]
+pthread_cond_t queue_not_full = PTHREAD_COND_INITIALIZER;
 request_t req_entries[MAX_QUEUE_LEN];                    //How will you track the requests globally between threads? How will you ensure this is thread safe?
 
 
@@ -115,31 +115,26 @@ int readFromDisk(int fd, char *mybuf, void **memory) {
     return INVALID;
   }
 
-  fseek();
+  *memory = malloc(buf.st_size);
 
   fclose(fp);
-
-  //TODO remove this line and follow directions above
-  return INVALID;
+  return 0;
 }
 
 /**********************************************************************************/
 
-// Function to receive the path)request from the client and add to the queue
+// Function to receive the path request from the client and add to the queue
 void * dispatch(void *arg) {
 
   /********************* DO NOT REMOVE SECTION - TOP     *********************/
 
-
   /* TODO (B.I)
   *    Description:      Get the id as an input argument from arg, set it to ID
   */
-
+  dispatcherIndex = *(int *) arg;
+  threadID[dispatcherIndex] = pthread_self();
   
-
-
   while (1) {
-
     /* TODO (FOR INTERMEDIATE SUBMISSION)
     *    Description:      Receive a single request and print the conents of that request
     *                      The TODO's below are for the full submission, you do not have to use a 
@@ -147,49 +142,50 @@ void * dispatch(void *arg) {
     *    Hint:             Helpful Functions: int accept_connection(void) | int get_request(int fd, char *filename
     *                      Recommend using the request_t structure from server.h to store the request. (Refer section 15 on the project write up)
     */
-   
-   int fd = accept_connection();
-
-   if(fd > 0) {
-       get_request(fd, req_entries->request);
-   }
-
-
+    request_t req;
 
     /* TODO (B.II)
     *    Description:      Accept client connection
     *    Utility Function: int accept_connection(void) //utils.h => Line 24
     */
-
-
-
+    int fd = accept_connection();
 
     /* TODO (B.III)
     *    Description:      Get request from the client
     *    Utility Function: int get_request(int fd, char *filename); //utils.h => Line 41
     */
+    
+    //if(fd > 0) {
+    //  get_request(fd, req_entries->request);
+    //}
+    char buff[BUFF_SIZE];
+    get_request(fd, buff);
 
-
-
-    // fprintf(stderr, "Dispatcher Received Request: fd[%d] request[%s]\n", tempreq.fd, tempreq.request);
+    fprintf(stderr, "Dispatcher Received Request: fd[%d] request[%s]\n", fd, buff);
     /* TODO (B.IV)
     *    Description:      Add the request into the queue
     */
 
         //(1) Copy the filename from get_request into allocated memory to put on request queue
-        
-
+    //req.request = malloc(sizeof(buff));
+    //memcpy(req.request, buff, sizeof(buff));
         //(2) Request thread safe access to the request queue
-
+    pthread_mutex_lock(&lock);
         //(3) Check for a full queue... wait for an empty one which is signaled from req_queue_notfull
-
+    if (curequest == queue_len) {
+      pthread_cond_wait(&queue_not_full, &lock);
+    }
         //(4) Insert the request into the queue
+    //req_entries[dispatcherIndex] = req;
+    memcpy(&req_entries[dispatcherIndex], &req, sizeof(req));
         
         //(5) Update the queue index in a circular fashion
+    curequest++;
 
         //(6) Release the lock on the request queue and signal that the queue is not empty anymore
-
- }
+    pthread_cond_signal(&queue_not_empty);
+    pthread_mutex_unlock(&lock);
+  }
 
   return NULL;
 }
@@ -198,7 +194,6 @@ void * dispatch(void *arg) {
 // Function to retrieve the request from the queue, process it and then return a result to the client
 void * worker(void *arg) {
   /********************* DO NOT REMOVE SECTION - BOTTOM      *********************/
-
 
   #pragma GCC diagnostic ignored "-Wunused-variable"      //TODO --> Remove these before submission and fix warnings
   #pragma GCC diagnostic push                             //TODO --> Remove these before submission and fix warnings
@@ -230,14 +225,18 @@ void * worker(void *arg) {
           //(1) Request thread safe access to the request queue by getting the req_queue_mutex lock
     pthread_mutex_lock(&lock);
           //(2) While the request queue is empty conditionally wait for the request queue lock once the not empty signal is raised
-    
+    while (curequest == 0) {
+      pthread_cond_wait(&queue_not_empty, &lock);
+    }
           //(3) Now that you have the lock AND the queue is not empty, read from the request queue
           
           //(4) Update the request queue remove index in a circular fashion
+    curequest--;
 
           //(5) Check for a path with only a "/" if that is the case add index.html to it
 
           //(6) Fire the request queue not full signal to indicate the queue has a slot opened up and release the request queue lock
+    pthread_cond_signal(&queue_not_full);
     pthread_mutex_unlock(&lock);
     /* TODO (C.III)
     *    Description:      Get the data from the disk or the cache 
@@ -367,12 +366,6 @@ int main(int argc, char **argv) {
   *                      You will want to initialize some kind of global array to pass in thread ID's
   *                      How should you track this p_thread so you can terminate it later? [global]
   */
-  //pthread_t dt, wt;
-  //dispatcher_thread[dispatcherIndex] = pthread_create(&dt, NULL, dispatch, (void*) dispatcherIndex);
-  //dispatcherIndex++;
-
-  //worker_thread[workerIndex] = pthread_create(&wt, NULL, worker, (void*) workerIndex);
-  //workerIndex++;
   
   int dispatch_args[num_dispatcher];
   int worker_args[num_dispatcher];
@@ -398,7 +391,7 @@ int main(int argc, char **argv) {
     }
   }
 
-  fclose(logfile);
+  //fclose(logfile);
 
   // Wait for each of the threads to complete their work
   // Threads (if created) will not exit (see while loop), but this keeps main from exiting
