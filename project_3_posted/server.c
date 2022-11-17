@@ -11,7 +11,8 @@ FILE *logfile;                                                  //Global file po
 
 /* ************************ Global Hints **********************************/
 
-//int ????      = 0;                            //[Cache]           --> When using cache, how will you track which cache entry to evict from array?
+int cacheRecentIndex      = 0;                    //[Cache]           --> When using cache, how will you track which cache entry to evict from array?
+int cacheTotal = 0;
 int workerIndex = 0;                            //[worker()]        --> How will you track which index in the request queue to remove next?
 int dispatcherIndex = 0;                        //[dispatcher()]    --> How will you know where to insert the next request received into the request queue?
 int curequest= 0;                               //[multiple funct]  --> How will you update and utilize the current number of requests in the request queue?
@@ -29,7 +30,7 @@ pthread_cond_t queue_not_full = PTHREAD_COND_INITIALIZER;
 request_t req_entries[MAX_QUEUE_LEN];                    //How will you track the requests globally between threads? How will you ensure this is thread safe?
 
 
-//cache_entry_t* ?????;                                  //[Cache]  --> How will you read from, add to, etc. the cache? Likely want this to be global
+cache_entry_t* cache_entries[MAX_CE];                                  //[Cache]  --> How will you read from, add to, etc. the cache? Likely want this to be global
 
 /**********************************************************************************/
 
@@ -46,6 +47,12 @@ int getCacheIndex(char *request){
   /* TODO (GET CACHE INDEX)
   *    Description:      return the index if the request is present in the cache otherwise return INVALID
   */
+  for (int i = 1; i < MAX_CE; i++) {
+      if (request == cache_entries[i]->request) {
+        return i;
+      }
+  }
+
   return INVALID;
 }
 
@@ -55,6 +62,28 @@ void addIntoCache(char *mybuf, char *memory , int memory_size){
   *    Description:      It should add the request at an index according to the cache replacement policy
   *                      Make sure to allocate/free memory when adding or replacing cache entries
   */
+  
+  // First check if no open space
+  if (cache_size == MAX_CE) {
+    // Free the next entry after cacheRecentIndex  
+    free(cache_entries[cacheRecentIndex]->len); 
+    free(cache_entries[cacheRecentIndex]->request);
+    free(cache_entries[cacheRecentIndex]->content);
+// (char *) realloc(str, sizeof(int *) );
+    cache_entries[i]->len = (int *)malloc(sizeof(int *));
+    cache_entries[i]->request = (char *)malloc(sizeof(char *));
+    cache_entries[i]->content = (char *)malloc(sizeof(char *));
+  } else {
+  // Then allocate next entry
+    cache_entries[i]->len = (int *)malloc(sizeof(int *)); 
+    cache_entries[i]->request = (char *)malloc(sizeof(char *));
+    cache_entries[i]->content = (char *)malloc(sizeof(char *));
+  }
+  // Increment cache size.
+  if (cacheRecentIndex == MAX_CE) {
+
+  }
+  cacheRecentIndex++;
 }
 
 // Function to clear the memory allocated to the cache
@@ -62,6 +91,13 @@ void deleteCache(){
   /* TODO (CACHE)
   *    Description:      De-allocate/free the cache memory
   */
+  for(i = 0 ;i < MAX_CE; i++) {
+    free(cache_entries[i]->len); 
+    free(cache_entries[i]->request);
+    free(cache_entries[i]->content);
+    }
+
+  free(cache_entries);
 
 }
 
@@ -70,6 +106,13 @@ void initCache(){
   /* TODO (CACHE)
   *    Description:      Allocate and initialize an array of cache entries of length cache size
   */
+  cache_entries = malloc(MAX_CE * sizeof(cache_entriy_t))
+
+  // for(i = 0 ;i < MAX_CE; i++) {
+  //     cache_entries[i]->len = (int *)malloc(sizeof(int *));
+  //     cache_entries[i]->request = (char *)malloc(sizeof(char *));
+  //     cache_entries[i]->content = (char *)malloc(sizeof(char *));
+  //   }
 }
 
 /**********************************************************************************/
@@ -82,10 +125,19 @@ char* getContentType(char *mybuf) {
   *                      (See Section 5 in Project description for more details)
   *    Hint:             Need to check the end of the string passed in to check for .html, .jpg, .gif, etc.
   */
-
+  char* c[2] = ".";
+  char* content_type[5] = strtok(mybuf, c);
 
    //TODO remove this line and return the actual content type
-  return NULL;
+  if (content_type = "html") {
+    return "text/html";
+  } else if (content_type = "jpeg") {
+    return "image/jpeg";
+  } else if (content_type = "gif") {
+    return "image/gif";
+  }  else {
+    return "text/plain";
+  }
 }
 
 // Function to open and read the file from the disk into the memory. Add necessary arguments as needed
