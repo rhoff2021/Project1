@@ -131,8 +131,8 @@ void * dispatch(void *arg) {
   /* TODO (B.I)
   *    Description:      Get the id as an input argument from arg, set it to ID
   */
-  dispatcherIndex = *(int *) arg;
-  threadID[dispatcherIndex] = pthread_self();
+  //int id = *(int *) arg;
+  //threadID[id] = pthread_self();
   
   while (1) {
     /* TODO (FOR INTERMEDIATE SUBMISSION)
@@ -154,10 +154,6 @@ void * dispatch(void *arg) {
     *    Description:      Get request from the client
     *    Utility Function: int get_request(int fd, char *filename); //utils.h => Line 41
     */
-    
-    //if(fd > 0) {
-    //  get_request(fd, req_entries->request);
-    //}
     char buff[BUFF_SIZE];
     get_request(fd, buff);
 
