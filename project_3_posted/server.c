@@ -47,8 +47,8 @@ int getCacheIndex(char *request){
   /* TODO (GET CACHE INDEX)
   *    Description:      return the index if the request is present in the cache otherwise return INVALID
   */
-  for (int i = 1; i < MAX_CE; i++) {
-    if (request == cache_entries[i]->request) {
+  for (int i = 1; i < cache_len; i++) {
+    if (strcmp(request, cache_entries[i]->request)) {
       return i;
     }
   }
@@ -85,12 +85,7 @@ void addIntoCache(char *mybuf, char *memory , int memory_size){
   */
 
   // check if cache is full. frees the first item in the cache (FIFO).
-  if (cacheRecentIndex == (cache_len-1)) {
-    free(cache_entries[0]);
-    for (int i=0; i<cache_len; i++) {
-      memmove();
-    }
-  }
+  
 
   // Increment cache size.
   if (cacheRecentIndex == MAX_CE) {
@@ -184,7 +179,7 @@ int readFromDisk(int fd, char *mybuf, void **memory) {
   *memory = malloc(buf.st_size);
 
   fclose(fp);
-  return 0;
+  return buf.st_size;
 }
 
 /**********************************************************************************/
@@ -197,8 +192,8 @@ void * dispatch(void *arg) {
   /* TODO (B.I)
   *    Description:      Get the id as an input argument from arg, set it to ID
   */
-  //int id = *(int *) arg;
-  //threadID[id] = pthread_self();
+  int id = *(int *) arg;
+  threadID[id] = pthread_self();
   
   while (1) {
     /* TODO (FOR INTERMEDIATE SUBMISSION)
@@ -215,6 +210,7 @@ void * dispatch(void *arg) {
     *    Utility Function: int accept_connection(void) //utils.h => Line 24
     */
     int fd = accept_connection();
+    req.fd = fd;
 
     /* TODO (B.III)
     *    Description:      Get request from the client
@@ -231,20 +227,22 @@ void * dispatch(void *arg) {
     */
 
         //(1) Copy the filename from get_request into allocated memory to put on request queue
-    req.request = malloc(sizeof(buff));
-    memcpy(req.request, buff, sizeof(buff));
+    req.request = malloc(sizeof(char) * strlen(buff));    // malloc memory to the length of the string in buff
+    memcpy(req.request, buff, strlen(buff));              // memcpy buff string to req.request
+
         //(2) Request thread safe access to the request queue
     pthread_mutex_lock(&lock);
         //(3) Check for a full queue... wait for an empty one which is signaled from req_queue_notfull
     if (curequest == queue_len) {
       pthread_cond_wait(&queue_not_full, &lock);
     }
+    
         //(4) Insert the request into the queue
-    // req_entries[dispatcherIndex] = req;
-    memcpy(&req_entries[dispatcherIndex], &req, sizeof(req));
+    req_entries[dispatcherIndex] = req;                   // put request into queue
+    dispatcherIndex++;
         
         //(5) Update the queue index in a circular fashion
-    //curequest++;
+    curequest++;
 
         //(6) Release the lock on the request queue and signal that the queue is not empty anymore
     pthread_cond_signal(&queue_not_empty);
@@ -278,9 +276,8 @@ void * worker(void *arg) {
   /* TODO (C.I)
   *    Description:      Get the id as an input argument from arg, set it to ID
   */
-  // threadID[workerIndex] = arg;
-
-
+  int id = *(int *) arg;
+  //threadID[id] = pthread_self();
 
   while (1) {
     /* TODO (C.II)
@@ -293,22 +290,28 @@ void * worker(void *arg) {
       pthread_cond_wait(&queue_not_empty, &lock);
     }
           //(3) Now that you have the lock AND the queue is not empty, read from the request queue
-          
+    fd = req_entries[0].fd;                          // set fd to first request's fd
+    strcpy(mybuf, req_entries[0].request);            // set mybuf to first request's uri
+
           //(4) Update the request queue remove index in a circular fashion
     curequest--;
 
           //(5) Check for a path with only a "/" if that is the case add index.html to it
+    //if (strcmp(mybuf, "/")) {             // doing strcmp stuff here but its not working
+    //  strcat(mybuf, "index.html");
+    //}
 
           //(6) Fire the request queue not full signal to indicate the queue has a slot opened up and release the request queue lock
     pthread_cond_signal(&queue_not_full);
     pthread_mutex_unlock(&lock);
+
     /* TODO (C.III)
     *    Description:      Get the data from the disk or the cache 
     *    Local Function:   int readFromDisk(//necessary arguments//);
     *                      int getCacheIndex(char *request);  
     *                      void addIntoCache(char *mybuf, char *memory , int memory_size);  
     */
-
+    
 
     /* TODO (C.IV)
     *    Description:      Log the request into the file and terminal
@@ -316,20 +319,23 @@ void * worker(void *arg) {
     *    Hint:             Call LogPrettyPrint with to_write = NULL which will print to the terminal
     *                      You will need to lock and unlock the logfile to write to it in a thread safe manor
     */
+    pthread_mutex_lock(&lock);
 
+    LogPrettyPrint(NULL, id, num_request, fd, mybuf, filesize, cache_hit);     // LogPrettyPrint, but i'm not sure what requestNumber should be...
+    num_request++;
+    pthread_mutex_unlock(&lock);
 
     /* TODO (C.V)
     *    Description:      Get the content type and return the result or error
     *    Utility Function: (1) int return_result(int fd, char *content_type, char *buf, int numbytes); //look in utils.h 
     *                      (2) int return_error(int fd, char *buf); //look in utils.h 
     */
+    if (return_result(fd, getContentType(mybuf), mybuf, filesize) != 0) {
+      return_error(fd, mybuf);
+    }
   }
 
-
-
-
   return NULL;
-
 }
 
 /**********************************************************************************/
