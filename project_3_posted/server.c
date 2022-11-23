@@ -11,9 +11,9 @@ FILE *logfile;                                                  //Global file po
 
 /* ************************ Global Hints **********************************/
 
-int cacheIndex = 0;                      //[Cache]           --> When using cache, how will you track which cache entry to evict from array?
-bool cacheFull = false; // indicator
-int cacheTotal = 0; // keeps track of current cache entries
+int cacheIndex = 0;                             //[Cache]           --> When using cache, how will you track which cache entry to evict from array?
+bool cacheFull = false;                         // indicator
+int cacheTotal = 0;                             // keeps track of current cache entries
 int workerIndex = 0;                            //[worker()]        --> How will you track which index in the request queue to remove next?
 int dispatcherIndex = 0;                        //[dispatcher()]    --> How will you know where to insert the next request received into the request queue?
 int curequest= 0;                               //[multiple funct]  --> How will you update and utilize the current number of requests in the request queue?
@@ -63,7 +63,7 @@ void addIntoCache(char *mybuf, char *memory , int memory_size){
   *    Description:      It should add the request at an index according to the cache replacement policy
   *                      Make sure to allocate/free memory when adding or replacing cache entries
   */
-  
+
   // First check if no open space
   if (cacheFull) {
     // Free the space in the current cacheindex  
@@ -90,7 +90,7 @@ void addIntoCache(char *mybuf, char *memory , int memory_size){
   if (cacheTotal == cache_len) {
     cacheFull = true;
   }
-
+  
   // checks if cache has hit the end of cache -> begins at 0
   if(cacheIndex == cache_len) { 
     cacheIndex = 0;
@@ -127,6 +127,7 @@ void initCache(){
     cache_entries[i]->request = NULL;
     cache_entries[i]->len = -1;
   }
+  
 }
 
 /**********************************************************************************/
@@ -247,6 +248,7 @@ void * dispatch(void *arg) {
     dispatcherIndex++;
         
         //(5) Update the queue index in a circular fashion
+    printf("req_entries[%d] is curequest[%d]\n", dispatcherIndex, curequest);
     curequest++;
 
         //(6) Release the lock on the request queue and signal that the queue is not empty anymore
