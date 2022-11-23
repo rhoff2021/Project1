@@ -11,8 +11,9 @@ FILE *logfile;                                                  //Global file po
 
 /* ************************ Global Hints **********************************/
 
-int cacheRecentIndex = 0;                      //[Cache]           --> When using cache, how will you track which cache entry to evict from array?
-int cacheTotal = 0;
+int cacheIndex = 0;                      //[Cache]           --> When using cache, how will you track which cache entry to evict from array?
+bool cacheFull = false; // indicator
+int cacheTotal = 0; // keeps track of current cache entries
 int workerIndex = 0;                            //[worker()]        --> How will you track which index in the request queue to remove next?
 int dispatcherIndex = 0;                        //[dispatcher()]    --> How will you know where to insert the next request received into the request queue?
 int curequest= 0;                               //[multiple funct]  --> How will you update and utilize the current number of requests in the request queue?
@@ -62,36 +63,39 @@ void addIntoCache(char *mybuf, char *memory , int memory_size){
   *    Description:      It should add the request at an index according to the cache replacement policy
   *                      Make sure to allocate/free memory when adding or replacing cache entries
   */
-
-  //cache_entries[cacheRecentIndex] = malloc(memory_size);
-  //cache_entries[cacheRecentIndex] = memory
-  /*
-  // First check if no open space
-  if (cacheTotal == MAX_CE) {
-    // Free the next entry after cacheRecentIndex  
-    free((int *) cache_entries[cacheRecentIndex]->len); 
-    free((char *) cache_entries[cacheRecentIndex]->request);
-    free((char *) cache_entries[cacheRecentIndex]->content);
-// (char *) realloc(str, sizeof(int *) );
-    cache_entries[i]->len = (int *)malloc(sizeof(int *));
-    cache_entries[i]->request = (char *)malloc(sizeof(char *));
-    cache_entries[i]->content = (char *)malloc(sizeof(char *));
-  } else {
-  // Then allocate next entry
-    cache_entries[i]->len = (int *)malloc(sizeof(int *)); 
-    cache_entries[i]->request = (char *)malloc(sizeof(char *));
-    cache_entries[i]->content = (char *)malloc(sizeof(char *));
-  }
-  */
-
-  // check if cache is full. frees the first item in the cache (FIFO).
   
+  // First check if no open space
+  if (cacheFull) {
+    // Free the space in the current cacheindex  
+    free(cache_entries[cacheIndex]->request);
+    free(cache_entries[cacheIndex]->content);
+    // reallocate the correct memory in the current cacheindex
+    cache_entries[cacheIndex]->request = (char *)malloc(sizeof(char *));
+    cache_entries[cacheIndex]->content = (char *)malloc(memory_size);
+    // add content to cacheindex
+    cache_entries[cacheIndex]->len = memory_size;
+    cache_entries[cacheIndex]->request = mybuf;
+    cache_entries[cacheIndex]->content = memory;
+  } else { // there is free space, allocate next entry
+    cacheTotal++;
+    cache_entries[cacheIndex]->request = (char *)malloc(sizeof(char *));
+    cache_entries[cacheIndex]->content = (char *)malloc(sizeof(char *));
+    // add content to cacheindex
+    cache_entries[cacheIndex]->len = memory_size;
+    cache_entries[cacheIndex]->request = mybuf;
+    cache_entries[cacheIndex]->content = memory;
+  }
 
-  // Increment cache size.
-  if (cacheRecentIndex == MAX_CE) {
-    cacheRecentIndex = 0;
+  // check if cache has been filled
+  if (cacheTotal == cache_len) {
+    cacheFull = true;
+  }
+
+  // checks if cache has hit the end of cache -> begins at 0
+  if(cacheIndex == cache_len) { 
+    cacheIndex = 0;
   } else {
-    cacheRecentIndex++;
+    cacheIndex++; // keeps looping through the cache to replace
   }
 }
 
@@ -100,17 +104,15 @@ void deleteCache(){
   /* TODO (CACHE)
   *    Description:      De-allocate/free the cache memory
   */
-  for (int i=0; i<cache_len; i++) {
-    free(cache_entries[i]);
-  }
-  /*
-  for(int i = 0 ; i < MAX_CE; i++) {
-    free(cache_entries[i]->len); 
+  for (int i = 0; i < cache_len; i++) {
+    free(&cache_entries[i]->len);
     free(cache_entries[i]->request);
     free(cache_entries[i]->content);
+    free(cache_entries[i]);
   }
-  */
-  //free(cache_entries);
+  cacheFull = false;
+  cacheIndex = 0;
+  cacheTotal = 0;
 }
 
 // Function to initialize the cache
@@ -118,10 +120,13 @@ void initCache(){
   /* TODO (CACHE)
   *    Description:      Allocate and initialize an array of cache entries of length cache size
   */
-  for (int i=0; i<cache_len; i++) {
+  for (int i = 0; i < cache_len; i++) {
     cache_entries[i] = malloc(sizeof(cache_entry_t));
+
+    cache_entries[i]->content = NULL;
+    cache_entries[i]->request = NULL;
+    cache_entries[i]->len = -1;
   }
-  
 }
 
 /**********************************************************************************/
