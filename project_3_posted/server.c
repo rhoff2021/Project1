@@ -11,7 +11,8 @@ FILE *logfile;                                                  //Global file po
 
 /* ************************ Global Hints **********************************/
 
-//int ????      = 0;                            //[Cache]           --> When using cache, how will you track which cache entry to evict from array?
+int cacheRecentIndex = 0;                      //[Cache]           --> When using cache, how will you track which cache entry to evict from array?
+int cacheTotal = 0;
 int workerIndex = 0;                            //[worker()]        --> How will you track which index in the request queue to remove next?
 int dispatcherIndex = 0;                        //[dispatcher()]    --> How will you know where to insert the next request received into the request queue?
 int curequest= 0;                               //[multiple funct]  --> How will you update and utilize the current number of requests in the request queue?
@@ -29,7 +30,7 @@ pthread_cond_t queue_not_full = PTHREAD_COND_INITIALIZER;
 request_t req_entries[MAX_QUEUE_LEN];                    //How will you track the requests globally between threads? How will you ensure this is thread safe?
 
 
-//cache_entry_t* ?????;                                  //[Cache]  --> How will you read from, add to, etc. the cache? Likely want this to be global
+cache_entry_t* cache_entries[MAX_CE];                                  //[Cache]  --> How will you read from, add to, etc. the cache? Likely want this to be global
 
 /**********************************************************************************/
 
@@ -46,6 +47,12 @@ int getCacheIndex(char *request){
   /* TODO (GET CACHE INDEX)
   *    Description:      return the index if the request is present in the cache otherwise return INVALID
   */
+  for (int i = 1; i < MAX_CE; i++) {
+    if (request == cache_entries[i]->request) {
+      return i;
+    }
+  }
+
   return INVALID;
 }
 
@@ -55,6 +62,42 @@ void addIntoCache(char *mybuf, char *memory , int memory_size){
   *    Description:      It should add the request at an index according to the cache replacement policy
   *                      Make sure to allocate/free memory when adding or replacing cache entries
   */
+
+  //cache_entries[cacheRecentIndex] = malloc(memory_size);
+  //cache_entries[cacheRecentIndex] = memory
+  /*
+  // First check if no open space
+  if (cacheTotal == MAX_CE) {
+    // Free the next entry after cacheRecentIndex  
+    free((int *) cache_entries[cacheRecentIndex]->len); 
+    free((char *) cache_entries[cacheRecentIndex]->request);
+    free((char *) cache_entries[cacheRecentIndex]->content);
+// (char *) realloc(str, sizeof(int *) );
+    cache_entries[i]->len = (int *)malloc(sizeof(int *));
+    cache_entries[i]->request = (char *)malloc(sizeof(char *));
+    cache_entries[i]->content = (char *)malloc(sizeof(char *));
+  } else {
+  // Then allocate next entry
+    cache_entries[i]->len = (int *)malloc(sizeof(int *)); 
+    cache_entries[i]->request = (char *)malloc(sizeof(char *));
+    cache_entries[i]->content = (char *)malloc(sizeof(char *));
+  }
+  */
+
+  // check if cache is full. frees the first item in the cache (FIFO).
+  if (cacheRecentIndex == (cache_len-1)) {
+    free(cache_entries[0]);
+    for (int i=0; i<cache_len; i++) {
+      memmove();
+    }
+  }
+
+  // Increment cache size.
+  if (cacheRecentIndex == MAX_CE) {
+    cacheRecentIndex = 0;
+  } else {
+    cacheRecentIndex++;
+  }
 }
 
 // Function to clear the memory allocated to the cache
@@ -62,7 +105,17 @@ void deleteCache(){
   /* TODO (CACHE)
   *    Description:      De-allocate/free the cache memory
   */
-
+  for (int i=0; i<cache_len; i++) {
+    free(cache_entries[i]);
+  }
+  /*
+  for(int i = 0 ; i < MAX_CE; i++) {
+    free(cache_entries[i]->len); 
+    free(cache_entries[i]->request);
+    free(cache_entries[i]->content);
+  }
+  */
+  //free(cache_entries);
 }
 
 // Function to initialize the cache
@@ -70,6 +123,10 @@ void initCache(){
   /* TODO (CACHE)
   *    Description:      Allocate and initialize an array of cache entries of length cache size
   */
+  for (int i=0; i<cache_len; i++) {
+    cache_entries[i] = malloc(sizeof(cache_entry_t));
+  }
+  
 }
 
 /**********************************************************************************/
@@ -82,10 +139,19 @@ char* getContentType(char *mybuf) {
   *                      (See Section 5 in Project description for more details)
   *    Hint:             Need to check the end of the string passed in to check for .html, .jpg, .gif, etc.
   */
-
+  const char c[2] = ".";
+  char *content_type = strtok(mybuf, c);
 
    //TODO remove this line and return the actual content type
-  return NULL;
+  if (strcmp(content_type, "html")) {
+    return "text/html";
+  } else if (strcmp(content_type, "jpeg")) {
+    return "image/jpeg";
+  } else if (strcmp(content_type, "gif")) {
+    return "image/gif";
+  }  else {
+    return "text/plain";
+  }
 }
 
 // Function to open and read the file from the disk into the memory. Add necessary arguments as needed
@@ -99,7 +165,7 @@ int readFromDisk(int fd, char *mybuf, void **memory) {
     return INVALID;
   }
 
-   fprintf (stderr,"The requested file path is: %s\n", mybuf);
+  fprintf (stderr,"The requested file path is: %s\n", mybuf);
   
   /* TODO 
   *    Description:      Find the size of the file you need to read, read all of the contents into a memory location and return the file size
@@ -155,7 +221,9 @@ void * dispatch(void *arg) {
     *    Utility Function: int get_request(int fd, char *filename); //utils.h => Line 41
     */
     char buff[BUFF_SIZE];
-    get_request(fd, buff);
+    if(fd > 0) {
+      get_request(fd, buff);
+    }
 
     fprintf(stderr, "Dispatcher Received Request: fd[%d] request[%s]\n", fd, buff);
     /* TODO (B.IV)
@@ -163,8 +231,8 @@ void * dispatch(void *arg) {
     */
 
         //(1) Copy the filename from get_request into allocated memory to put on request queue
-    //req.request = malloc(sizeof(buff));
-    //memcpy(req.request, buff, sizeof(buff));
+    req.request = malloc(sizeof(buff));
+    memcpy(req.request, buff, sizeof(buff));
         //(2) Request thread safe access to the request queue
     pthread_mutex_lock(&lock);
         //(3) Check for a full queue... wait for an empty one which is signaled from req_queue_notfull
@@ -172,11 +240,11 @@ void * dispatch(void *arg) {
       pthread_cond_wait(&queue_not_full, &lock);
     }
         //(4) Insert the request into the queue
-    //req_entries[dispatcherIndex] = req;
+    // req_entries[dispatcherIndex] = req;
     memcpy(&req_entries[dispatcherIndex], &req, sizeof(req));
         
         //(5) Update the queue index in a circular fashion
-    curequest++;
+    //curequest++;
 
         //(6) Release the lock on the request queue and signal that the queue is not empty anymore
     pthread_cond_signal(&queue_not_empty);
@@ -309,13 +377,10 @@ int main(int argc, char **argv) {
   } else if (num_dispatcher < 1 || num_dispatcher > MAX_THREADS) {
     return -1;
   } else if (num_worker < 1 || num_worker > MAX_THREADS) {
-  } else if (num_worker < 1 || num_worker > MAX_THREADS) {
     return -1;
-  } else if (queue_len < 1 || queue_len > MAX_QUEUE_LEN) {
-  } else if (queue_len < 1 || queue_len > MAX_QUEUE_LEN) {
+  }  else if (queue_len < 1 || queue_len > MAX_QUEUE_LEN) {
     return -1;
-  } else if (cache_len < 1 || cache_len > MAX_CE) {
-  } else if (cache_len < 1 || cache_len > MAX_CE) {
+  }  else if (cache_len < 1 || cache_len > MAX_CE) {
     return -1;
   }
  
