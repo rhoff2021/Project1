@@ -208,14 +208,14 @@ void * dispatch(void *arg) {
     *    Hint:             Helpful Functions: int accept_connection(void) | int get_request(int fd, char *filename
     *                      Recommend using the request_t structure from server.h to store the request. (Refer section 15 on the project write up)
     */
-    request_t req;
+    // request_t req;
 
     /* TODO (B.II)
     *    Description:      Accept client connection
     *    Utility Function: int accept_connection(void) //utils.h => Line 24
     */
     int fd = accept_connection();
-    req.fd = fd;
+    req_entries[curequest].fd = fd;
 
     /* TODO (B.III)
     *    Description:      Get request from the client
@@ -232,8 +232,8 @@ void * dispatch(void *arg) {
     */
 
         //(1) Copy the filename from get_request into allocated memory to put on request queue
-    req.request = malloc(sizeof(char) * strlen(buff));    // malloc memory to the length of the string in buff
-    memcpy(req.request, buff, strlen(buff));              // memcpy buff string to req.request
+    req_entries[curequest].request = (char*)malloc(sizeof(char*));    // malloc memory to the length of the string in buff
+    memcpy(req_entries[curequest].request, buff, strlen(buff));              // memcpy buff string to req.request
 
         //(2) Request thread safe access to the request queue
     pthread_mutex_lock(&lock);
@@ -243,11 +243,15 @@ void * dispatch(void *arg) {
     }
     
         //(4) Insert the request into the queue
-    req_entries[dispatcherIndex] = req;                   // put request into queue
+    req_entries[dispatcherIndex].request = buff;                   // put request into queue
     dispatcherIndex++;
         
         //(5) Update the queue index in a circular fashion
-    curequest++;
+    if(curequest == queue_len) {
+      curequest = 0;
+    }  else {
+      curequest++;
+    }
 
         //(6) Release the lock on the request queue and signal that the queue is not empty anymore
     pthread_cond_signal(&queue_not_empty);
