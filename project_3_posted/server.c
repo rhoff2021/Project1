@@ -324,6 +324,12 @@ void * worker(void *arg) {
     *                      int getCacheIndex(char *request);  
     *                      void addIntoCache(char *mybuf, char *memory , int memory_size);  
     */
+    num_request = getCacheIndex(req_entries[curequest].request);
+    if (num_request = INVALID) {
+      filesize = readFromDisk(fd, mybuf, memory);
+      addIntoCache(mybuf, memory, filesize);
+      num_request = getCacheIndex(req_entries[curequest].request);
+    }
     
     //int cacheIndex = getCacheIndex(mybuf);
     /*
