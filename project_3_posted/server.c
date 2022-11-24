@@ -320,6 +320,17 @@ void * worker(void *arg) {
     *                      int getCacheIndex(char *request);  
     *                      void addIntoCache(char *mybuf, char *memory , int memory_size);  
     */
+   int i = getCacheIndex(req_entries[0].request);
+   if(i != INVALID) {
+    memory = cache_entries[i]->content;
+    cache_hit = true;
+   } else {
+    int j = readFromDisk(fd, mybuf, memory);
+    if(j != INVALID){
+      addIntoCache(mybuf, memory, j);
+    }
+   }
+
     
 
     /* TODO (C.IV)
@@ -329,7 +340,6 @@ void * worker(void *arg) {
     *                      You will need to lock and unlock the logfile to write to it in a thread safe manor
     */
     pthread_mutex_lock(&lock);
-
     LogPrettyPrint(NULL, id, num_request, fd, mybuf, filesize, cache_hit);     // LogPrettyPrint, but i'm not sure what requestNumber should be...
     num_request++;
     pthread_mutex_unlock(&lock);
