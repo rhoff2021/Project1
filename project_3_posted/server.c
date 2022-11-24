@@ -48,12 +48,15 @@ int getCacheIndex(char *request){
   /* TODO (GET CACHE INDEX)
   *    Description:      return the index if the request is present in the cache otherwise return INVALID
   */
+  if (cacheTotal == 0) {
+    return INVALID;
+  }
+
   for (int i = 1; i < cache_len; i++) {
     if (strcmp(request, cache_entries[i]->request)) {
       return i;
     }
   }
-
   return INVALID;
 }
 
@@ -79,7 +82,7 @@ void addIntoCache(char *mybuf, char *memory , int memory_size){
   } else { // there is free space, allocate next entry
     cacheTotal++;
     cache_entries[cacheIndex]->request = (char *)malloc(sizeof(char *));
-    cache_entries[cacheIndex]->content = (char *)malloc(sizeof(char *));
+    cache_entries[cacheIndex]->content = (char *)malloc(memory_size);
     // add content to cacheindex
     cache_entries[cacheIndex]->len = memory_size;
     cache_entries[cacheIndex]->request = mybuf;
@@ -324,23 +327,21 @@ void * worker(void *arg) {
     *                      int getCacheIndex(char *request);  
     *                      void addIntoCache(char *mybuf, char *memory , int memory_size);  
     */
-    num_request = getCacheIndex(req_entries[curequest].request);
-    if (num_request = INVALID) {
-      filesize = readFromDisk(fd, mybuf, memory);
-      addIntoCache(mybuf, memory, filesize);
-      num_request = getCacheIndex(req_entries[curequest].request);
-    }
-    
-    //int cacheIndex = getCacheIndex(mybuf);
-    /*
+    int cacheIndex = getCacheIndex(mybuf);
+
     if (cacheIndex != INVALID) {
+      printf("in cache\n");
       cache_hit = true;
-      filesize = atoi(cache_entries[cacheIndex]->content);
+      filesize = cache_entries[cacheIndex]->len;
+      memory = cache_entries[cacheIndex]->content;
+      //filesize = atoi(cache_entries[cacheIndex]->content);
     } else {
+      printf("in disk\n");
       filesize = readFromDisk(fd, mybuf, memory);
       addIntoCache(mybuf, memory, filesize);
     }
-    */
+
+    //num_request++;
 
     /* TODO (C.IV)
     *    Description:      Log the request into the file and terminal
@@ -359,9 +360,10 @@ void * worker(void *arg) {
     *    Utility Function: (1) int return_result(int fd, char *content_type, char *buf, int numbytes); //look in utils.h 
     *                      (2) int return_error(int fd, char *buf); //look in utils.h 
     */
-    if (return_result(fd, getContentType(mybuf), mybuf, filesize) != 0) {
+    if (return_result(fd, getContentType(mybuf), memory, filesize) != 0) {
       return_error(fd, mybuf);
     }
+    
   }
 
   return NULL;
