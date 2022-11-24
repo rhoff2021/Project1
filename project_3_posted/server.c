@@ -184,7 +184,6 @@ int readFromDisk(int fd, char *mybuf, void **memory) {
     fclose(fp);
     return INVALID;
   }
-
   *memory = malloc(buf.st_size);
 
   fclose(fp);
@@ -290,6 +289,7 @@ void * worker(void *arg) {
   *    Description:      Get the id as an input argument from arg, set it to ID
   */
   int id = *(int *) arg;
+  threadID[id] = pthread_self();
 
   while (1) {
     /* TODO (C.II)
@@ -313,9 +313,9 @@ void * worker(void *arg) {
     }
 
           //(5) Check for a path with only a "/" if that is the case add index.html to it
-    //if (strcmp(mybuf, "/")) {             // doing strcmp stuff here but its not working
-    //  strcat(mybuf, "index.html");
-    //}
+    if (strcmp(mybuf, "/") == 0) {
+      strcat(mybuf, "index.html");
+    }
 
           //(6) Fire the request queue not full signal to indicate the queue has a slot opened up and release the request queue lock
     pthread_cond_signal(&queue_not_full);
@@ -328,20 +328,15 @@ void * worker(void *arg) {
     *                      void addIntoCache(char *mybuf, char *memory , int memory_size);  
     */
     int cacheIndex = getCacheIndex(mybuf);
-
-    if (cacheIndex != INVALID) {
-      printf("in cache\n");
-      cache_hit = true;
-      filesize = cache_entries[cacheIndex]->len;
-      memory = cache_entries[cacheIndex]->content;
-      //filesize = atoi(cache_entries[cacheIndex]->content);
-    } else {
-      printf("in disk\n");
+    if (cacheIndex == INVALID) {
       filesize = readFromDisk(fd, mybuf, memory);
       addIntoCache(mybuf, memory, filesize);
+    } else {
+      cache_hit = true;
+      filesize = cache_entries[cacheIndex]->len;
+      memcpy(memory, cache_entries[cacheIndex]->content, strlen(cache_entries[cacheIndex]->content));
     }
     
-
     /* TODO (C.IV)
     *    Description:      Log the request into the file and terminal
     *    Utility Function: LogPrettyPrint(FILE* to_write, int threadId, int requestNumber, int file_descriptor, char* request_str, int num_bytes_or_error, bool cache_hit);
@@ -349,7 +344,8 @@ void * worker(void *arg) {
     *                      You will need to lock and unlock the logfile to write to it in a thread safe manor
     */
     pthread_mutex_lock(&lock);
-    LogPrettyPrint(NULL, id, num_request, fd, mybuf, filesize, cache_hit);     // LogPrettyPrint, but i'm not sure what requestNumber should be...
+    logfile = fopen(LOG_FILE_NAME, "w+");
+    LogPrettyPrint(logfile, id, num_request, fd, mybuf, filesize, cache_hit);
     num_request++;
     pthread_mutex_unlock(&lock);
 
@@ -361,7 +357,9 @@ void * worker(void *arg) {
     if (return_result(fd, getContentType(mybuf), memory, filesize) != 0) {
       return_error(fd, mybuf);
     }
-    
+    if (cache_hit == false) {
+      free(memory);
+    }
   }
 
   return NULL;
