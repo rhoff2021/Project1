@@ -340,8 +340,7 @@ void * worker(void *arg) {
       filesize = readFromDisk(fd, mybuf, memory);
       addIntoCache(mybuf, memory, filesize);
     }
-
-    //num_request++;
+    
 
     /* TODO (C.IV)
     *    Description:      Log the request into the file and terminal
@@ -350,7 +349,6 @@ void * worker(void *arg) {
     *                      You will need to lock and unlock the logfile to write to it in a thread safe manor
     */
     pthread_mutex_lock(&lock);
-
     LogPrettyPrint(NULL, id, num_request, fd, mybuf, filesize, cache_hit);     // LogPrettyPrint, but i'm not sure what requestNumber should be...
     num_request++;
     pthread_mutex_unlock(&lock);
@@ -508,4 +506,3 @@ int main(int argc, char **argv) {
   }
   fprintf(stderr, "SERVER DONE \n");  // will never be reached in SOLUTION
 }
-
