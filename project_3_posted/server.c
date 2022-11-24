@@ -246,7 +246,7 @@ void * dispatch(void *arg) {
     }
     
         //(4) Insert the request into the queue
-    req_entries[dispatcherIndex].request = buff;                   // put request into queue
+    req_entries[curequest].request = buff;                   // put request into queue
     dispatcherIndex++;
         
         //(5) Update the queue index in a circular fashion
