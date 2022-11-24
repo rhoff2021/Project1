@@ -73,20 +73,20 @@ void addIntoCache(char *mybuf, char *memory , int memory_size){
     free(cache_entries[cacheIndex]->request);
     free(cache_entries[cacheIndex]->content);
     // reallocate the correct memory in the current cacheindex
-    cache_entries[cacheIndex]->request = (char *)malloc(sizeof(char *));
+    cache_entries[cacheIndex]->request = (char *)malloc(sizeof(strlen(mybuf)+1));
     cache_entries[cacheIndex]->content = (char *)malloc(memory_size);
     // add content to cacheindex
     cache_entries[cacheIndex]->len = memory_size;
-    cache_entries[cacheIndex]->request = mybuf;
-    cache_entries[cacheIndex]->content = memory;
+    strcpy(cache_entries[cacheIndex]->request, mybuf);
+    strcpy(cache_entries[cacheIndex]->content, memory);
   } else { // there is free space, allocate next entry
     cacheTotal++;
-    cache_entries[cacheIndex]->request = (char *)malloc(sizeof(char *));
+    cache_entries[cacheIndex]->request = (char *)malloc(sizeof(strlen(mybuf)+1));
     cache_entries[cacheIndex]->content = (char *)malloc(memory_size);
     // add content to cacheindex
     cache_entries[cacheIndex]->len = memory_size;
-    cache_entries[cacheIndex]->request = mybuf;
-    cache_entries[cacheIndex]->content = memory;
+    strcpy(cache_entries[cacheIndex]->request, mybuf);
+    strcpy(cache_entries[cacheIndex]->content, memory);
   }
 
   // check if cache has been filled
@@ -125,6 +125,9 @@ void initCache(){
   */
   for (int i = 0; i < cache_len; i++) {
     cache_entries[i] = malloc(sizeof(cache_entry_t));
+    cache_entries[i]->content = (char*)malloc(sizeof(char*));
+    cache_entries[i]->request = (char*)malloc(sizeof(char*));
+
 
     cache_entries[i]->content = NULL;
     cache_entries[i]->request = NULL;
@@ -163,8 +166,8 @@ char* getContentType(char *mybuf) {
 int readFromDisk(int fd, char *mybuf, void **memory) {
   //    Description: Try and open requested file, return INVALID if you cannot meaning error
 
-  FILE *fp;
-  if((fp = fopen(mybuf, "r")) == NULL){
+  FILE *fp = fopen(mybuf+1, "r");
+  if(fp == NULL){
      fprintf (stderr, "ERROR: Fail to open the file.\n");
     return INVALID;
   }
@@ -236,8 +239,9 @@ void * dispatch(void *arg) {
     */
 
         //(1) Copy the filename from get_request into allocated memory to put on request queue
-    req_entries[curequest].request = (char*)malloc(sizeof(char*));    // malloc memory to the length of the string in buff
-    memcpy(req_entries[curequest].request, buff, (strlen(buff)));              // memcpy buff string to req.request
+    req_entries[curequest].request = (char*)malloc(sizeof(strlen(buff)+1));    // malloc memory to the length of the string in buff
+    strcpy(req_entries[curequest].request, buff);
+    // memcpy(req_entries[curequest].request, buff, (strlen(buff)));              // memcpy buff string to req.request
 
         //(2) Request thread safe access to the request queue
     pthread_mutex_lock(&lock);
@@ -247,8 +251,7 @@ void * dispatch(void *arg) {
     }
     
         //(4) Insert the request into the queue
-    req_entries[dispatcherIndex].request = buff;                   // put request into queue
-    dispatcherIndex++;
+    strcpy(req_entries[curequest].request, buff);                   // put request into queue
         
         //(5) Update the queue index in a circular fashion
     if(curequest == queue_len) {                             // if at max queue length, set queue index to beginning
@@ -306,11 +309,12 @@ void * worker(void *arg) {
     strcpy(mybuf, req_entries[0].request);            // set mybuf to first request's uri
 
           //(4) Update the request queue remove index in a circular fashion
-    if (curequest == 0) {                   // if curequest is at beginning of the queue, set queue index to the last index
-      curequest = (queue_len-1);                // else decrement to the next array
-    } else {
-      curequest--;
-    }
+    // if (curequest == 0) {                   // if curequest is at beginning of the queue, set queue index to the last index
+    //   curequest = (queue_len-1);                // else decrement to the next array
+    // } else {
+    //   curequest--;
+    // }
+    curequest--;
 
           //(5) Check for a path with only a "/" if that is the case add index.html to it
     //if (strcmp(mybuf, "/")) {             // doing strcmp stuff here but its not working
@@ -464,16 +468,15 @@ int main(int argc, char **argv) {
   */
   
   int dispatch_args[num_dispatcher];
-  int worker_args[num_dispatcher];
+  int worker_args[num_worker];
 
-  for (int i = 0; i < num_dispatcher; i++) {
-      dispatch_args[i] = i;
-      worker_args[i] = i;
+  for (int i = 0; i < MAX_THREADS; i++) {
+    threadID[i] = i;
   }
 
   // creating dispatcher threads
   for(int i = 0; i < num_dispatcher; i++) {
-    if(pthread_create(&dispatcher_thread[i], NULL, dispatch, (void*) &dispatch_args[i]) != 0) {
+    if(pthread_create(&dispatcher_thread[i], NULL, dispatch, (void*) &threadID[i]) != 0) {
       fprintf(stderr,"Error creating dispatcher thread\n");
 		  exit(1);
     }
@@ -481,7 +484,7 @@ int main(int argc, char **argv) {
 
   // creating worker threads
   for(int i = 0; i < num_worker; i++) {
-    if(pthread_create(&worker_thread[i], NULL, worker, (void*) &worker_args[i]) != 0) {
+    if(pthread_create(&worker_thread[i], NULL, worker, (void*) &threadID[i]) != 0) {
       fprintf(stderr,"Error creating worker thread\n");
       exit(1);
     }
