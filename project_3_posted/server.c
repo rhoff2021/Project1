@@ -181,8 +181,8 @@ int readFromDisk(int fd, char *mybuf, void **memory) {
   */
 
   struct stat buf;
-  int stat = fstat(fd, &buf);
-  if (stat == -1) {
+
+  if (fstat(fd, &buf) == -1) {
     printf("fstat error.\n");
     fclose(fp);
     return INVALID;
@@ -334,8 +334,16 @@ void * worker(void *arg) {
     *                      int getCacheIndex(char *request);  
     *                      void addIntoCache(char *mybuf, char *memory , int memory_size);  
     */
-    int cacheIndex = getCacheIndex(mybuf);
-    if (cacheIndex == INVALID) {
+    int cache = getCacheIndex(mybuf);
+
+    if (cache != INVALID) {
+      printf("in cache\n");
+      cache_hit = true;
+      filesize = cache_entries[cache]->len;
+      memory = cache_entries[cache]->content;
+      //filesize = atoi(cache_entries[cacheIndex]->content);
+    } else {
+      printf("in disk\n");
       filesize = readFromDisk(fd, mybuf, memory);
       addIntoCache(mybuf, memory, filesize);
     } else {
