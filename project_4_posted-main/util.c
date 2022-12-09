@@ -51,11 +51,10 @@ void init(int port) {
 
    // TODO: Change the socket options to be reusable using setsockopt(). 
   int enable = 1;
-  setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
+  setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, (char*) &enable, sizeof(int));
 
    // TODO: Bind the socket to the provided port.
   bind(sd, &addr, sizeof(addr));
-
 
    // TODO: Mark the socket as a pasive socket. (ie: a socket that will be used to receive connections)
 
@@ -64,8 +63,7 @@ void init(int port) {
    
    // We save the file descriptor to a global variable so that we can use it in accept_connection().
   master_fd = sd;
-  printf("UTILS.O: Server Started on Port %d\n",port);
-
+  printf("UTILS.O: Server Started on Port %d\n", port);
 }
 
 
@@ -84,10 +82,10 @@ int accept_connection(void) {
    int newsock;
    struct sockaddr_in new_recv_addr;
    int addr_len;
-   addr_len = sizeof(new_recv_addr);
+   //addr_len = sizeof(new_recv_addr);
+
    
-   
-   
+
    /**********************************************
     * IMPORTANT!
     * ALL TODOS FOR THIS FUNCTION MUST BE COMPLETED FOR THE INTERIM SUBMISSION!!!!
@@ -97,7 +95,7 @@ int accept_connection(void) {
    // TODO: Aquire the mutex lock
    pthread_mutex_lock(&accept_con_mutex);
    // TODO: Accept a new connection on the passive socket and save the fd to newsock
-   
+   //newsock = socket();
    // TODO: Release the mutex lock
    pthread_mutex_unlock(&accept_con_mutex);
 
