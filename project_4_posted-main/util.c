@@ -46,20 +46,28 @@ void init(int port) {
 
    // TODO: Create a socket and save the file descriptor to sd (declared above)
    // This socket should be for use with IPv4 and for a TCP connection.
-  fd = socket(AF_INET, SOCK_STREAM, 0);
+  if(fd = socket(AF_INET, SOCK_STREAM, 0) == -1) {
+    fprintf(stderr,"Failed to create new socket%s\n", strerror(errno));
+  }
   addr.sin_family = AF_INET;
   addr.sin_addr.s_addr = htonl(INADDR_ANY);     // host -> network byte order conversions
   addr.sin_port = htons(port);                    // this was a problem, I changed it to a htons instead of htonl. -Ji
 
    // TODO: Change the socket options to be reusable using setsockopt(). 
   int enable = 1;
-  setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char*) &enable, sizeof(int));
+  if(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char*) &enable, sizeof(int)) == -1) {
+    fprintf(stderr,"Failed to change socket options to be reusable%s\n", strerror(errno));
+  }
 
    // TODO: Bind the socket to the provided port.
-  bind(fd, (struct sockaddr*) &addr, sizeof(addr));
+  if(bind(fd, (struct sockaddr*) &addr, sizeof(addr)) == -1) {
+    fprintf(stderr,"Failed to bind socket%s\n", strerror(errno));
+  }
 
    // TODO: Mark the socket as a pasive socket. (ie: a socket that will be used to receive connections)
-  listen(fd, 20);       // Changed this to 20 since thats the max for the final submission. -Ji
+  if(listen(fd, 20) == -1) {  // Changed this to 20 since thats the max for the final submission. -Ji
+    fprintf(stderr,"Failed mark socket passive%s\n", strerror(errno));
+  }       
    
    // We save the file descriptor to a global variable so that we can use it in accept_connection().
   master_fd = fd;
@@ -93,11 +101,18 @@ int accept_connection(void) {
 
      
    // TODO: Aquire the mutex lock
-  pthread_mutex_lock(&accept_con_mutex);
+  if (pthread_mutex_lock(&accept_con_mutex) < 0) {
+    fprintf(stderr,"Failed to lock%s\n", strerror(errno));
+
+  }
    // TODO: Accept a new connection on the passive socket and save the fd to newsock
-  newsock = accept(master_fd, (struct sockaddr*) &new_addr, &addr_len);
+  if(newsock = accept(master_fd, (struct sockaddr*) &new_addr, &addr_len) < 0) {
+        fprintf(stderr,"Failed to accept new connection%s\n", strerror(errno));
+  }
    // TODO: Release the mutex lock
-  pthread_mutex_unlock(&accept_con_mutex);
+  if (pthread_mutex_unlock(&accept_con_mutex) < 0) {
+    fprintf(stderr,"Failed to unlock%s\n", strerror(errno));
+  }
    // TODO: Return the file descriptor for the new client connection
   return newsock;
 }
@@ -131,7 +146,10 @@ int get_request(int fd, char *filename) {
   char buf[2048];
    
    // INTERIM TODO: Read the request from the file descriptor into the buffer
-  read(fd, buf, sizeof(buf));
+  if(read(fd, buf, sizeof(buf)) == -1) {
+    fprintf(stderr,"Failed to read request%s\n", strerror(errno));
+
+  }
    // INTERIM TODO: PRINT THE REQUEST TO THE TERMINAL
   
    // TODO: Ensure that the incoming request is a properly formatted HTTP "GET" request
