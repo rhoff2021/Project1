@@ -32,7 +32,7 @@ pthread_mutex_t accept_con_mutex = PTHREAD_MUTEX_INITIALIZER;
 ************************************************/
 void init(int port) {
   int sd;
-  struct sockaddr_in addr;
+  const struct sockaddr *addr;  // I changed this because it kept getting caught here, might need to change back
   int ret_val;
   int flag;
    
@@ -54,11 +54,11 @@ void init(int port) {
   setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
 
    // TODO: Bind the socket to the provided port.
-  bind(sd, &addr, sizeof(addr));
+  bind(sd, addr, sizeof(addr));
 
 
    // TODO: Mark the socket as a pasive socket. (ie: a socket that will be used to receive connections)
-
+  listen(sd, 1);
    
    
    
@@ -97,7 +97,7 @@ int accept_connection(void) {
    // TODO: Aquire the mutex lock
    pthread_mutex_lock(&accept_con_mutex);
    // TODO: Accept a new connection on the passive socket and save the fd to newsock
-   
+   newsock = accept(master_fd, addr_len, (struct sockaddr*) &new_recv_addr);
    // TODO: Release the mutex lock
    pthread_mutex_unlock(&accept_con_mutex);
 
@@ -137,9 +137,9 @@ int get_request(int fd, char *filename) {
    char buf[2048];
    
    // INTERIM TODO: Read the request from the file descriptor into the buffer
-   
+    read(fd, buf, 2048);
    // INTERIM TODO: PRINT THE REQUEST TO THE TERMINAL
-   
+   printf("%s", buf);
    // TODO: Ensure that the incoming request is a properly formatted HTTP "GET" request
    // The first line of the request must be of the form: GET <file name> HTTP/1.0 
    // or: GET <file name> HTTP/1.1
