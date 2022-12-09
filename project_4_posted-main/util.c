@@ -31,7 +31,7 @@ pthread_mutex_t accept_con_mutex = PTHREAD_MUTEX_INITIALIZER;
 void init(int port) {
   int fd;
   //const struct sockaddr *addr;  // I changed this because it kept getting caught here, might need to change back
-  struct sockaddr_in addr;
+  struct sockaddr_in addr;            // Changed it to a regular struct, it works now. -Ji
   //int ret_val;
   //int flag;
    
@@ -49,7 +49,7 @@ void init(int port) {
   fd = socket(AF_INET, SOCK_STREAM, 0);
   addr.sin_family = AF_INET;
   addr.sin_addr.s_addr = htonl(INADDR_ANY);     // host -> network byte order conversions
-  addr.sin_port = htons(port);                    // this was the problem, i changed it to a htons instead of htonl
+  addr.sin_port = htons(port);                    // this was a problem, I changed it to a htons instead of htonl. -Ji
 
    // TODO: Change the socket options to be reusable using setsockopt(). 
   int enable = 1;
@@ -59,7 +59,7 @@ void init(int port) {
   bind(fd, (struct sockaddr*) &addr, sizeof(addr));
 
    // TODO: Mark the socket as a pasive socket. (ie: a socket that will be used to receive connections)
-  listen(fd, 20);
+  listen(fd, 20);       // Changed this to 20 since thats the max for the final submission. -Ji
    
    // We save the file descriptor to a global variable so that we can use it in accept_connection().
   master_fd = fd;
@@ -131,15 +131,16 @@ int get_request(int fd, char *filename) {
   char buf[2048];
    
    // INTERIM TODO: Read the request from the file descriptor into the buffer
-  read(fd, buf, 2048);
+  read(fd, buf, sizeof(buf));
    // INTERIM TODO: PRINT THE REQUEST TO THE TERMINAL
   
    // TODO: Ensure that the incoming request is a properly formatted HTTP "GET" request
    // The first line of the request must be of the form: GET <file name> HTTP/1.0 
    // or: GET <file name> HTTP/1.1
-  //sscanf(buf, "%s", );
+  
+
    // TODO: Extract the file name from the request
-   
+  
    // TODO: Ensure the file name does not contain with ".." or "//"
    // FILE NAMES WHICH CONTAIN ".." OR "//" ARE A SECURITY THREAT AND MUST NOT BE ACCEPTED!!!
 
