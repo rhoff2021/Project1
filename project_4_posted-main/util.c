@@ -21,8 +21,6 @@ pthread_mutex_t accept_con_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
 
-
-
 /**********************************************
  * init
    - port is the number of the port you want the server to be
@@ -31,10 +29,11 @@ pthread_mutex_t accept_con_mutex = PTHREAD_MUTEX_INITIALIZER;
    - if init encounters any errors, it will call exit().
 ************************************************/
 void init(int port) {
-  int sd;
+  int fd;
+  //const struct sockaddr *addr;  // I changed this because it kept getting caught here, might need to change back
   struct sockaddr_in addr;
-  int ret_val;
-  int flag;
+  //int ret_val;
+  //int flag;
    
    
    
@@ -43,26 +42,27 @@ void init(int port) {
     * ALL TODOS FOR THIS FUNCTION MUST BE COMPLETED FOR THE INTERIM SUBMISSION!!!!
     **********************************************/
    
-   
-   
+  
+
    // TODO: Create a socket and save the file descriptor to sd (declared above)
    // This socket should be for use with IPv4 and for a TCP connection.
-  sd = socket(PF_INET, SOCK_STREAM, 0);
+  fd = socket(AF_INET, SOCK_STREAM, 0);
+  addr.sin_family = AF_INET;
+  addr.sin_addr.s_addr = htonl(INADDR_ANY);     // host -> network byte order conversions
+  addr.sin_port = htons(port);                    // this was the problem, i changed it to a htons instead of htonl
 
    // TODO: Change the socket options to be reusable using setsockopt(). 
   int enable = 1;
-  setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, (char*) &enable, sizeof(int));
+  setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char*) &enable, sizeof(int));
 
    // TODO: Bind the socket to the provided port.
-  bind(sd, &addr, sizeof(addr));
+  bind(fd, (struct sockaddr*) &addr, sizeof(addr));
 
    // TODO: Mark the socket as a pasive socket. (ie: a socket that will be used to receive connections)
-
-   
-   
+  listen(fd, 20);
    
    // We save the file descriptor to a global variable so that we can use it in accept_connection().
-  master_fd = sd;
+  master_fd = fd;
   printf("UTILS.O: Server Started on Port %d\n", port);
 }
 
@@ -79,29 +79,27 @@ void init(int port) {
      accept_connection must should ignore request.
 ***********************************************/
 int accept_connection(void) {
-   int newsock;
-   struct sockaddr_in new_recv_addr;
-   int addr_len;
-   //addr_len = sizeof(new_recv_addr);
+  int newsock;
+  struct sockaddr_in new_addr;
+  socklen_t addr_len = sizeof(struct sockaddr_in);
 
-   
+  
 
    /**********************************************
     * IMPORTANT!
     * ALL TODOS FOR THIS FUNCTION MUST BE COMPLETED FOR THE INTERIM SUBMISSION!!!!
     **********************************************/
- 
-   
-   // TODO: Aquire the mutex lock
-   pthread_mutex_lock(&accept_con_mutex);
-   // TODO: Accept a new connection on the passive socket and save the fd to newsock
-   //newsock = socket();
-   // TODO: Release the mutex lock
-   pthread_mutex_unlock(&accept_con_mutex);
 
+
+     
+   // TODO: Aquire the mutex lock
+  pthread_mutex_lock(&accept_con_mutex);
+   // TODO: Accept a new connection on the passive socket and save the fd to newsock
+  newsock = accept(master_fd, (struct sockaddr*) &new_addr, &addr_len);
+   // TODO: Release the mutex lock
+  pthread_mutex_unlock(&accept_con_mutex);
    // TODO: Return the file descriptor for the new client connection
-   
-   return newsock;
+  return newsock;
 }
 
 
@@ -130,18 +128,16 @@ int get_request(int fd, char *filename) {
     * THIS FUNCTION DOES NOT NEED TO BE COMPLETE FOR THE INTERIM SUBMISSION, BUT YOU WILL NEED
     * CODE IN IT FOR THE INTERIM SUBMISSION!!!!! 
     **********************************************/
-    
-    
-   char buf[2048];
+  char buf[2048];
    
    // INTERIM TODO: Read the request from the file descriptor into the buffer
-   
+  read(fd, buf, 2048);
    // INTERIM TODO: PRINT THE REQUEST TO THE TERMINAL
-   
+  
    // TODO: Ensure that the incoming request is a properly formatted HTTP "GET" request
    // The first line of the request must be of the form: GET <file name> HTTP/1.0 
    // or: GET <file name> HTTP/1.1
-   
+  //sscanf(buf, "%s", );
    // TODO: Extract the file name from the request
    
    // TODO: Ensure the file name does not contain with ".." or "//"
@@ -243,7 +239,6 @@ int return_error(int fd, char *buf) {
     * 
     * <Error Message>
     */
-    
     // TODO: Send headers to the client
     
     // TODO: Send the error message to the client
