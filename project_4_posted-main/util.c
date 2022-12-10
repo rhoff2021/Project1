@@ -46,7 +46,7 @@ void init(int port) {
 
    // TODO: Create a socket and save the file descriptor to sd (declared above)
    // This socket should be for use with IPv4 and for a TCP connection.
-  if(fd = socket(AF_INET, SOCK_STREAM, 0) == -1) {
+  if((fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
     fprintf(stderr,"Failed to create new socket%s\n", strerror(errno));
   }
   addr.sin_family = AF_INET;
@@ -106,7 +106,7 @@ int accept_connection(void) {
 
   }
    // TODO: Accept a new connection on the passive socket and save the fd to newsock
-  if(newsock = accept(master_fd, (struct sockaddr*) &new_addr, &addr_len) < 0) {
+  if((newsock = accept(master_fd, (struct sockaddr*) &new_addr, &addr_len)) < 0) {
         fprintf(stderr,"Failed to accept new connection%s\n", strerror(errno));
   }
    // TODO: Release the mutex lock
@@ -143,28 +143,51 @@ int get_request(int fd, char *filename) {
     * THIS FUNCTION DOES NOT NEED TO BE COMPLETE FOR THE INTERIM SUBMISSION, BUT YOU WILL NEED
     * CODE IN IT FOR THE INTERIM SUBMISSION!!!!! 
     **********************************************/
-  char buf[2048];
-   
+  char buf[2048];   
    // INTERIM TODO: Read the request from the file descriptor into the buffer
   if(read(fd, buf, sizeof(buf)) == -1) {
     fprintf(stderr,"Failed to read request%s\n", strerror(errno));
 
   }
    // INTERIM TODO: PRINT THE REQUEST TO THE TERMINAL
-  
+   
    // TODO: Ensure that the incoming request is a properly formatted HTTP "GET" request
    // The first line of the request must be of the form: GET <file name> HTTP/1.0 
    // or: GET <file name> HTTP/1.1
-  
+  char *token = strtok(buf, " ");
+  int i = 0; // counter for checking 3 required parts of request
+  char filenameCopy[1024];
+
+  while(token != NULL || strcmp(token, "\n") != 0){ // loop through request
+    printf("%s ", token);
+    if(i == 0 && strcmp(token, "GET") != 0) { // check first word
+      printf("incorrect format1");
+      return -1;
+    }
+    if(i == 1) { // get file name
+      strcpy(filenameCopy, token);
+    }
+    if((i == 2 && strcmp(token, "HTTP/1.0") != 0) || (i == 2 && strcmp(token, "HTTP/1.1") != 0)) { // check for correct http
+      printf("incorrect format2");
+      return -1;
+    }
+    i++;
+    token = strtok(NULL, " ");
+  }
 
    // TODO: Extract the file name from the request
   
    // TODO: Ensure the file name does not contain with ".." or "//"
    // FILE NAMES WHICH CONTAIN ".." OR "//" ARE A SECURITY THREAT AND MUST NOT BE ACCEPTED!!!
+   if(strstr(filenameCopy,"//") == NULL || strstr(filenameCopy,"..") == NULL) {
+    return -1;
+   }
+
 
    // TODO: Copy the file name to the provided buffer
+   strcpy(filename, filenameCopy);
 
-   return 0;
+  return 0;
 }
 
 
@@ -197,6 +220,7 @@ int return_result(int fd, char *content_type, char *buf, int numbytes) {
    // REQUIRED: Must send a line with the header "Content-Length: <file length>"
    // REQUIRED: Must send a line with the header "Content-Type: <content type>"
    // REQUIRED: Must send a line with the header "Connection: Close"
+
    
    // NOTE: The items above in angle-brackes <> are placeholders. The file length should be a number
    // and the content type is a string which is passed to the function.
