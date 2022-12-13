@@ -48,6 +48,7 @@ void init(int port) {
    // This socket should be for use with IPv4 and for a TCP connection.
   if((fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
     fprintf(stderr,"Failed to create new socket%s\n", strerror(errno));
+    exit(1);
   }
   addr.sin_family = AF_INET;
   addr.sin_addr.s_addr = htonl(INADDR_ANY);     // host -> network byte order conversions
@@ -57,16 +58,19 @@ void init(int port) {
   int enable = 1;
   if(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char*) &enable, sizeof(int)) == -1) {
     fprintf(stderr,"Failed to change socket options to be reusable%s\n", strerror(errno));
+    exit(1);
   }
 
    // TODO: Bind the socket to the provided port.
   if(bind(fd, (struct sockaddr*) &addr, sizeof(addr)) == -1) {
     fprintf(stderr,"Failed to bind socket%s\n", strerror(errno));
+    exit(1);
   }
 
    // TODO: Mark the socket as a pasive socket. (ie: a socket that will be used to receive connections)
   if(listen(fd, 20) == -1) {  // Changed this to 20 since thats the max for the final submission. -Ji
     fprintf(stderr,"Failed mark socket passive%s\n", strerror(errno));
+    exit(1);
   }       
    
    // We save the file descriptor to a global variable so that we can use it in accept_connection().
@@ -90,16 +94,12 @@ int accept_connection(void) {
   int newsock;
   struct sockaddr_in new_addr;
   socklen_t addr_len = sizeof(struct sockaddr_in);
-
   
-
    /**********************************************
     * IMPORTANT!
     * ALL TODOS FOR THIS FUNCTION MUST BE COMPLETED FOR THE INTERIM SUBMISSION!!!!
     **********************************************/
 
-
-     
    // TODO: Aquire the mutex lock
   if (pthread_mutex_lock(&accept_con_mutex) < 0) {
     fprintf(stderr,"Failed to lock%s\n", strerror(errno));
@@ -221,7 +221,16 @@ int return_result(int fd, char *content_type, char *buf, int numbytes) {
    // REQUIRED: Must send a line with the header "Content-Type: <content type>"
    // REQUIRED: Must send a line with the header "Connection: Close"
 
-   
+   char *line1 = "HTTP/1.0 200 OK\n";
+   char contentLength[1024];
+   char contentType[1024];
+   snprintf(contentLength, strlen(contentLength),"Content-Length: %d\n", numbytes);
+   snprintf(contentType, strlen(contentType),"Content-Type: %s\n", content_type);
+   printf("%s",contentLength);
+   printf("%s",contentType);
+
+   char *connection = "Connection: Close\n\n";
+
    // NOTE: The items above in angle-brackes <> are placeholders. The file length should be a number
    // and the content type is a string which is passed to the function.
    
@@ -236,13 +245,20 @@ int return_result(int fd, char *content_type, char *buf, int numbytes) {
     */
     
     // TODO: Send the HTTP headers to the client
-    
+
+    send(fd, line1, strlen(line1), 0);
+    send(fd, contentLength, strlen(contentLength), 0);
+    send(fd, contentType, strlen(contentType), 0);
+    send(fd, connection, strlen(connection), 0);
+
     // IMPORTANT: Add an extra new-line to the end. There must be an empty line between the 
     // headers and the file contents, as in the example above.
     
     // TODO: Send the file contents to the client
-    
+    send(fd, buf, numbytes, 0);
+
     // TODO: Close the connection to the client
+    close(fd);
     
     return 0;
 }
