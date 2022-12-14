@@ -154,27 +154,21 @@ int get_request(int fd, char *filename) {
    // TODO: Ensure that the incoming request is a properly formatted HTTP "GET" request
    // The first line of the request must be of the form: GET <file name> HTTP/1.0 
    // or: GET <file name> HTTP/1.1
-  char *token = strtok(buf, " ");
-  int i = 0; // counter for checking 3 required parts of request
-  char filenameCopy[1024];
+  char *token = strtok_r(buf, "\n", &token);
+  printf("%s\n", token);
 
-  while(token != NULL || strcmp(token, "\n") != 0){ // loop through request
-    printf("%s ", token);
-    if(i == 0 && strcmp(token, "GET") != 0) { // check first word
-      printf("incorrect format1");
-      return -1;
-    }
-    if(i == 1) { // get file name
-      strcpy(filenameCopy, token);
-    }
-    if((i == 2 && strcmp(token, "HTTP/1.0") != 0) || (i == 2 && strcmp(token, "HTTP/1.1") != 0)) { // check for correct http
-      printf("incorrect format2");
-      return -1;
-    }
-    i++;
-    token = strtok(NULL, " ");
+  char word1[100], filenameCopy[1024], word3[100];
+  sscanf(token, "%s %s %s", word1, filenameCopy, word3);
+
+  if(strcmp(word1, "GET") != 0) { // check first word
+    printf("incorrect format1");
+    return -1;
   }
-
+  if((strcmp(word3, "HTTP/1.0") != 0) && (strcmp(word3, "HTTP/1.1") != 0)) { // check for correct http
+    printf("incorrect format2");
+    return -1;
+  }
+  
    // TODO: Extract the file name from the request
   
    // TODO: Ensure the file name does not contain with ".." or "//"

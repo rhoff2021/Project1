@@ -1,0 +1,18 @@
+--2022-12-13 15:07:58--  http://127.0.0.1:1024/image/gif/0.gif
+Connecting to 127.0.0.1:1024... connected.
+HTTP request sent, awaiting response... Read error (Connection timed out) in headers.
+Retrying.
+
+--2022-12-13 15:23:00--  (try: 2)  http://127.0.0.1:1024/image/gif/0.gif
+Connecting to 127.0.0.1:1024... connected.
+HTTP request sent, awaiting response... Read error (Connection timed out) in headers.
+Retrying.
+
+--2022-12-13 15:38:02--  (try: 3)  http://127.0.0.1:1024/image/gif/0.gif
+Connecting to 127.0.0.1:1024... connected.
+HTTP request sent, awaiting response... Read error (Connection timed out) in headers.
+Retrying.
+
+--2022-12-13 15:53:05--  (try: 4)  http://127.0.0.1:1024/image/gif/0.gif
+Connecting to 127.0.0.1:1024... connected.
+HTTP request sent, awaiting response... 
