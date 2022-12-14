@@ -170,14 +170,12 @@ int get_request(int fd, char *filename) {
   }
   
    // TODO: Extract the file name from the request
-    printf("filenameCopy: %s\n", filenameCopy);
   
    // TODO: Ensure the file name does not contain with ".." or "//"
    // FILE NAMES WHICH CONTAIN ".." OR "//" ARE A SECURITY THREAT AND MUST NOT BE ACCEPTED!!!
    if(strstr(filenameCopy,"//") != NULL || strstr(filenameCopy,"..") != NULL) {
     return -1;
    }
-    printf("filenameCopy after: %s\n", filenameCopy);
 
 
    // TODO: Copy the file name to the provided buffer
@@ -219,10 +217,8 @@ int return_result(int fd, char *content_type, char *buf, int numbytes) {
    char *line1 = "HTTP/1.0 200 OK\n";
    char contentLength[1024];
    char contentType[1024];
-   snprintf(contentLength, strlen(contentLength),"Content-Length: %d\n", numbytes);
-   snprintf(contentType, strlen(contentType),"Content-Type: %s\n", content_type);
-   printf("%s",contentLength);
-   printf("%s",contentType);
+   snprintf(contentLength, sizeof(contentLength),"Content-Length: %d\n", numbytes);
+   snprintf(contentType, sizeof(contentType),"Content-Type: %s\n", content_type);
 
    char *connection = "Connection: Close\n\n";
 
