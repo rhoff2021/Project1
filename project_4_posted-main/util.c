@@ -170,17 +170,18 @@ int get_request(int fd, char *filename) {
   }
   
    // TODO: Extract the file name from the request
+    printf("filenameCopy: %s\n", filenameCopy);
   
    // TODO: Ensure the file name does not contain with ".." or "//"
    // FILE NAMES WHICH CONTAIN ".." OR "//" ARE A SECURITY THREAT AND MUST NOT BE ACCEPTED!!!
-   if(strstr(filenameCopy,"//") == NULL || strstr(filenameCopy,"..") == NULL) {
+   if(strstr(filenameCopy,"//") != NULL || strstr(filenameCopy,"..") != NULL) {
     return -1;
    }
+    printf("filenameCopy after: %s\n", filenameCopy);
 
 
    // TODO: Copy the file name to the provided buffer
    strcpy(filename, filenameCopy);
-
   return 0;
 }
 
