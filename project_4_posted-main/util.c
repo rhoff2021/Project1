@@ -273,11 +273,17 @@ int return_error(int fd, char *buf) {
    // REQUIRED: First line must be "HTTP/1.0 404 Not Found"
    // REQUIRED: Must send a header with the line: "Content-Length: <content length>"
    // REQUIRED: Must send a header with the line: "Connection: Close"
-   
+
    // NOTE: In this case, the content is what is passed to you in the argument "buf". This represents
    // a server generated error message for the user. The length of that message should be the content-length.
    
    // IMPORTANT: Similar to sending a file, there must be a blank line between the headers and the content.
+   
+   char *line1 = "HTTP/1.0 404 Not Found\n";
+   char contentLength[1024];
+   snprintf(contentLength, sizeof(contentLength),"Content-Length: %ld\n", strlen(buf));
+
+   char *connection = "Connection: Close\n\n";
    
    
    
@@ -290,10 +296,16 @@ int return_error(int fd, char *buf) {
     * <Error Message>
     */
     // TODO: Send headers to the client
+
+    send(fd, line1, strlen(line1), 0);
+    send(fd, contentLength, strlen(contentLength), 0);
+    send(fd, connection, strlen(connection), 0);
     
     // TODO: Send the error message to the client
+    send(fd, buf, sizeof(buf), 0);
     
     // TODO: Close the connection with the client.
+    close(fd);
     
     return 0;
 }
