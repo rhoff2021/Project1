@@ -147,7 +147,6 @@ int get_request(int fd, char *filename) {
    // INTERIM TODO: Read the request from the file descriptor into the buffer
   if(read(fd, buf, sizeof(buf)) == -1) {
     fprintf(stderr,"Failed to read request%s\n", strerror(errno));
-
   }
    // INTERIM TODO: PRINT THE REQUEST TO THE TERMINAL
    
@@ -157,14 +156,14 @@ int get_request(int fd, char *filename) {
   char *token = strtok_r(buf, "\n", &token);
   printf("%s\n", token);
 
-  char word1[100], filenameCopy[1024], word3[100];
-  sscanf(token, "%s %s %s", word1, filenameCopy, word3);
+  char format1[100], filenameCopy[1024], format2[100];
+  sscanf(token, "%s %s %s", format1, filenameCopy, format2);
 
-  if(strcmp(word1, "GET") != 0) { // check first word
+  if(strcmp(format1, "GET") != 0) { // check first format requirement
     printf("incorrect format1");
     return -1;
   }
-  if((strcmp(word3, "HTTP/1.0") != 0) && (strcmp(word3, "HTTP/1.1") != 0)) { // check for correct http
+  if((strcmp(format2, "HTTP/1.0") != 0) && (strcmp(format2, "HTTP/1.1") != 0)) { // check for correct http format
     printf("incorrect format2");
     return -1;
   }
@@ -176,7 +175,6 @@ int get_request(int fd, char *filename) {
    if(strstr(filenameCopy,"//") != NULL || strstr(filenameCopy,"..") != NULL) {
     return -1;
    }
-
 
    // TODO: Copy the file name to the provided buffer
    strcpy(filename, filenameCopy);
@@ -220,7 +218,7 @@ int return_result(int fd, char *content_type, char *buf, int numbytes) {
    snprintf(contentLength, sizeof(contentLength),"Content-Length: %d\n", numbytes);
    snprintf(contentType, sizeof(contentType),"Content-Type: %s\n", content_type);
 
-   char *connection = "Connection: Close\n\n";
+   char *connection = "Connection: Close\n";
 
    // NOTE: The items above in angle-brackes <> are placeholders. The file length should be a number
    // and the content type is a string which is passed to the function.
@@ -244,7 +242,7 @@ int return_result(int fd, char *content_type, char *buf, int numbytes) {
 
     // IMPORTANT: Add an extra new-line to the end. There must be an empty line between the 
     // headers and the file contents, as in the example above.
-    
+
     // TODO: Send the file contents to the client
     send(fd, buf, numbytes, 0);
 
@@ -281,9 +279,11 @@ int return_error(int fd, char *buf) {
    
    char *line1 = "HTTP/1.0 404 Not Found\n";
    char contentLength[1024];
-   snprintf(contentLength, sizeof(contentLength),"Content-Length: %ld\n", strlen(buf));
-
    char *connection = "Connection: Close\n\n";
+    
+   if(snprintf(contentLength, sizeof(contentLength),"Content-Length: %ld\n", strlen(buf)) < 0) {
+    return -1;
+   }
    
    
    
