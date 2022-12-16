@@ -30,13 +30,10 @@ pthread_mutex_t accept_con_mutex = PTHREAD_MUTEX_INITIALIZER;
 ************************************************/
 void init(int port) {
   int fd;
-  //const struct sockaddr *addr;  // I changed this because it kept getting caught here, might need to change back
-  struct sockaddr_in addr;            // Changed it to a regular struct, it works now. -Ji
-  //int ret_val;
-  //int flag;
+  struct sockaddr_in addr;
    
-   
-   
+
+
    /**********************************************
     * IMPORTANT!
     * ALL TODOS FOR THIS FUNCTION MUST BE COMPLETED FOR THE INTERIM SUBMISSION!!!!
@@ -56,7 +53,7 @@ void init(int port) {
 
    // TODO: Change the socket options to be reusable using setsockopt(). 
   int enable = 1;
-  if(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char*) &enable, sizeof(int)) == -1) {
+  if(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char*) &enable, sizeof(int)) == -1) {            // error checks for socket creation
     fprintf(stderr,"Failed to change socket options to be reusable%s\n", strerror(errno));
     exit(1);
   }
@@ -68,7 +65,7 @@ void init(int port) {
   }
 
    // TODO: Mark the socket as a pasive socket. (ie: a socket that will be used to receive connections)
-  if(listen(fd, 20) == -1) {  // Changed this to 20 since thats the max for the final submission. -Ji
+  if(listen(fd, 20) == -1) {
     fprintf(stderr,"Failed mark socket passive%s\n", strerror(errno));
     exit(1);
   }       
@@ -172,9 +169,9 @@ int get_request(int fd, char *filename) {
   
    // TODO: Ensure the file name does not contain with ".." or "//"
    // FILE NAMES WHICH CONTAIN ".." OR "//" ARE A SECURITY THREAT AND MUST NOT BE ACCEPTED!!!
-   if(strstr(filenameCopy,"//") != NULL || strstr(filenameCopy,"..") != NULL) {
+  if(strstr(filenameCopy,"//") != NULL || strstr(filenameCopy,"..") != NULL) {
     return -1;
-   }
+  }
 
    // TODO: Copy the file name to the provided buffer
   strcpy(filename, filenameCopy);
@@ -215,12 +212,12 @@ int return_result(int fd, char *content_type, char *buf, int numbytes) {
   char *line1 = "HTTP/1.0 200 OK\n";
   char contentLength[1024];
   char contentType[1024];
-  if (snprintf(contentLength, sizeof(contentLength),"Content-Length: %d\n", numbytes) < 0
-        || snprintf(contentType, sizeof(contentType),"Content-Type: %s\n", content_type) < 0) {
+  if (snprintf(contentLength, sizeof(contentLength),"Content-Length: %d\n", numbytes) == -1               // snprintf error checks
+        || snprintf(contentType, sizeof(contentType),"Content-Type: %s\n", content_type) == -1) {
     return -1;
   }
 
-  char *connection = "Connection: Close\n\n";
+  char *connection = "Connection: Close\n\n";       // two newlines here for the extra empty line
 
    // NOTE: The items above in angle-brackes <> are placeholders. The file length should be a number
    // and the content type is a string which is passed to the function.
@@ -236,17 +233,23 @@ int return_result(int fd, char *content_type, char *buf, int numbytes) {
     */
     
     // TODO: Send the HTTP headers to the client
+    if (send(fd, line1, strlen(line1), 0) == -1 || send(fd, contentLength, strlen(contentLength), 0) == -1 ||           // send error checks
+          send(fd, contentType, strlen(contentType), 0) == -1 || send(fd, connection, strlen(connection), 0) == -1) {
+      return -1;
+    }
 
-    send(fd, line1, strlen(line1), 0);
-    send(fd, contentLength, strlen(contentLength), 0);
-    send(fd, contentType, strlen(contentType), 0);
-    send(fd, connection, strlen(connection), 0);
+    //send(fd, line1, strlen(line1), 0);
+    //send(fd, contentLength, strlen(contentLength), 0);
+    //send(fd, contentType, strlen(contentType), 0);
+    //send(fd, connection, strlen(connection), 0);
 
     // IMPORTANT: Add an extra new-line to the end. There must be an empty line between the 
     // headers and the file contents, as in the example above.
 
     // TODO: Send the file contents to the client
-    send(fd, buf, numbytes, 0);
+    if (send(fd, buf, numbytes, 0) == -1) {
+      return -1;
+    }
     // TODO: Close the connection to the client
     close(fd);
     
@@ -282,7 +285,7 @@ int return_error(int fd, char *buf) {
    char contentLength[1024];
    char *connection = "Connection: Close\n\n";
     
-   if(snprintf(contentLength, sizeof(contentLength),"Content-Length: %ld\n", strlen(buf)) < 0) {
+   if(snprintf(contentLength, sizeof(contentLength),"Content-Length: %ld\n", strlen(buf)) == -1) {          // snprintf error check
     return -1;
    }
    
@@ -297,13 +300,19 @@ int return_error(int fd, char *buf) {
     * <Error Message>
     */
     // TODO: Send headers to the client
+    if (send(fd, line1, strlen(line1), 0) == -1 || send(fd, contentLength, strlen(contentLength), 0) == -1 ||         // send error checks
+      send(fd, connection, strlen(connection), 0) == -1) {
+      return -1;
+    }
 
-    send(fd, line1, strlen(line1), 0);
-    send(fd, contentLength, strlen(contentLength), 0);
-    send(fd, connection, strlen(connection), 0);
+    //send(fd, line1, strlen(line1), 0);
+    //send(fd, contentLength, strlen(contentLength), 0);
+    //send(fd, connection, strlen(connection), 0);
     
     // TODO: Send the error message to the client
-    send(fd, buf, sizeof(buf), 0);
+    if (send(fd, buf, sizeof(buf), 0) == -1) {
+      return -1;
+    }
     
     // TODO: Close the connection with the client.
     close(fd);
