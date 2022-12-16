@@ -52,7 +52,7 @@ void init(int port) {
   }
   addr.sin_family = AF_INET;
   addr.sin_addr.s_addr = htonl(INADDR_ANY);     // host -> network byte order conversions
-  addr.sin_port = htons(port);                    // this was a problem, I changed it to a htons instead of htonl. -Ji
+  addr.sin_port = htons(port);
 
    // TODO: Change the socket options to be reusable using setsockopt(). 
   int enable = 1;
@@ -177,7 +177,7 @@ int get_request(int fd, char *filename) {
    }
 
    // TODO: Copy the file name to the provided buffer
-   strcpy(filename, filenameCopy);
+  strcpy(filename, filenameCopy);
   return 0;
 }
 
@@ -212,18 +212,20 @@ int return_result(int fd, char *content_type, char *buf, int numbytes) {
    // REQUIRED: Must send a line with the header "Content-Type: <content type>"
    // REQUIRED: Must send a line with the header "Connection: Close"
 
-   char *line1 = "HTTP/1.0 200 OK\n";
-   char contentLength[1024];
-   char contentType[1024];
-   snprintf(contentLength, sizeof(contentLength),"Content-Length: %d\n", numbytes);
-   snprintf(contentType, sizeof(contentType),"Content-Type: %s\n", content_type);
+  char *line1 = "HTTP/1.0 200 OK\n";
+  char contentLength[1024];
+  char contentType[1024];
+  if (snprintf(contentLength, sizeof(contentLength),"Content-Length: %d\n", numbytes) < 0
+        || snprintf(contentType, sizeof(contentType),"Content-Type: %s\n", content_type) < 0) {
+    return -1;
+  }
 
-   char *connection = "Connection: Close\n";
+  char *connection = "Connection: Close\n\n";
 
    // NOTE: The items above in angle-brackes <> are placeholders. The file length should be a number
    // and the content type is a string which is passed to the function.
    
-   /* EXAMPLE HTTP RESPONSE
+   /* EXAMPLE HTTP RESPONSE.
     * 
     * HTTP/1.0 200 OK
     * Content-Length: <content length>
@@ -245,7 +247,6 @@ int return_result(int fd, char *content_type, char *buf, int numbytes) {
 
     // TODO: Send the file contents to the client
     send(fd, buf, numbytes, 0);
-
     // TODO: Close the connection to the client
     close(fd);
     
