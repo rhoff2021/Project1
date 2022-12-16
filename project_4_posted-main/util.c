@@ -209,15 +209,18 @@ int return_result(int fd, char *content_type, char *buf, int numbytes) {
    // REQUIRED: Must send a line with the header "Content-Type: <content type>"
    // REQUIRED: Must send a line with the header "Connection: Close"
 
-  char *line1 = "HTTP/1.0 200 OK\n";
-  char contentLength[1024];
-  char contentType[1024];
-  if (snprintf(contentLength, sizeof(contentLength),"Content-Length: %d\n", numbytes) == -1               // snprintf error checks
-        || snprintf(contentType, sizeof(contentType),"Content-Type: %s\n", content_type) == -1) {
-    return -1;
-  }
+  // char *line1 = "HTTP/1.0 200 OK\n";
+  // char contentLength[1024];
+  // char contentType[1024];
+  // if (snprintf(contentLength, sizeof(contentLength),"Content-Length: %d\n", numbytes) == -1               // snprintf error checks
+  //       || snprintf(contentType, sizeof(contentType),"Content-Type: %s\n", content_type) == -1) {
+  //   return -1;
+  // }
+  char string_to_send[2048];
+  sprintf(string_to_send, "HTTP/1.0 200 OK\nContent-Length: %d\nContent-Type: %s\nConnection: Close\n\n", numbytes, content_type);
 
-  char *connection = "Connection: Close\n\n";       // two newlines here for the extra empty line
+
+  // char *connection = "Connection: Close\n\n";       // two newlines here for the extra empty line
 
    // NOTE: The items above in angle-brackes <> are placeholders. The file length should be a number
    // and the content type is a string which is passed to the function.
@@ -233,10 +236,14 @@ int return_result(int fd, char *content_type, char *buf, int numbytes) {
     */
     
     // TODO: Send the HTTP headers to the client
-    if (send(fd, line1, strlen(line1), 0) == -1 || send(fd, contentLength, strlen(contentLength), 0) == -1 ||           // send error checks
-          send(fd, contentType, strlen(contentType), 0) == -1 || send(fd, connection, strlen(connection), 0) == -1) {
-      return -1;
+    if (send(fd, string_to_send, strlen(string_to_send), 0) == -1) {
+        return -1;
     }
+    // } else if (send(fd, contentLength, strlen(contentLength), 0) == -1){
+    //   return -1;
+    // } else ifsend(fd, contentType, strlen(contentType), 0) == -1 || send(fd, connection, strlen(connection), 0) == -1) {
+    //   return -1;
+    // }
 
     //send(fd, line1, strlen(line1), 0);
     //send(fd, contentLength, strlen(contentLength), 0);
